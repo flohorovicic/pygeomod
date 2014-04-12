@@ -1,5 +1,5 @@
 import os
-from distutils.core import setup
+from setuptools import setup
 
 # Advise from https://pythonhosted.org/an_example_pypi_project/setuptools.html
 # Utility function to read the README file.
