@@ -1,4 +1,4 @@
-pygeomodeller
+pygeomod
 =============
 
 Python wrapper for Geomodeller
