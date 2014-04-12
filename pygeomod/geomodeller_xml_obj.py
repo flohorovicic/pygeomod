@@ -202,6 +202,57 @@ class GeomodellerClass:
         for formation in self.formations:
             forms.append(formation.get("Name"))
         return forms
+
+    def get_points_in_sections(self):
+        """Create dictionary of all points (with obs-id) in all sections"""
+        self.create_sections_dict()
+        for sec in self.section_dict.keys():
+            forms = self.get_formation_point_data(self.section_dict[sec])
+            if forms == None:
+                print "\t\t\tNo Formation Points in this section"
+            else:
+                for form in forms:
+ 
+                    data = form.find("{"+self.xmlns+"}Data")
+                    print "\nObsID = %s" % form.get("ObservationID")
+                    print "\tFormation name\t= %s" % data.get("Name")
+                    element_point = form.find("{"+self.gml+"}LineString")
+                    element_coords = element_point.find("{"+self.gml+"}coordinates")
+                    tmp = element_coords.text.split(" ")
+                    for tmp1 in tmp:
+                        if tmp1 == '': continue
+                        tmp_cds = tmp1.split(",")
+                        print("\tX = %.1f, Y = %.1f" % (float(tmp_cds[0]), float(tmp_cds[1])))
+
+
+                    fol = form.find("{"+self.xmlns+"}FoliationObservation")
+                    if fol is not None:
+                        print("\tFoliation defined: azimuth = %.1f, dip = %.1f" % (float(fol.get("Azimuth")), float(fol.get("Dip"))))
+                        # get position of foliation (yet another point)
+                        pt = fol.find("{"+self.gml+"}Point")
+                        c = pt.find("{"+self.gml+"}coordinates")
+                        cds = c.text.split(",")
+                        print("\t\tX = %.1f, Y = %.1f" % (float(cds[0]), float(cds[1])))
+
+            print "\n"
+            print 80*"-"
+            print "Foliations in section %s:" % sec
+            print 80*"-"
+            foliations = self.get_foliations(self.section_dict[sec])
+            if foliations == None:
+                print "\t\t\tNo foliations in this section"
+            else:
+                for fol1 in foliations:
+                    print "\nObsID = %s" % fol1.get("ObservationID")
+                    data = fol1.find("{"+self.xmlns+"}Data")
+                    fol = fol1.find("{"+self.xmlns+"}FoliationObservation")
+                    print "\tFormation name\t= %s" % data.get("Name")
+                    print("\tAzimuth = %.1f, dip = %.1f" % (float(fol.get("Azimuth")), float(fol.get("Dip"))))
+                    pt = fol.find("{"+self.gml+"}Point")
+                    c = pt.find("{"+self.gml+"}coordinates")
+                    cds = c.text.split(",")
+                    print("\tX = %.1f, Y = %.1f" % (float(cds[0]), float(cds[1])))
+
     
     def get_formation_parameters(self):
         """read formation parameters; physical
