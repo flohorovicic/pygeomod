@@ -95,9 +95,20 @@ class GeoGrid():
         self.nx = nx
         self.ny = ny
         self.nz = nz
-        self.delx = [(self.xmax - self.xmin) / nx] * nx
-        self.dely = [(self.ymax - self.ymin) / ny] * ny
-        self.delz = [(self.zmax - self.zmin) / nz] * nz
+        self.delx = np.array([(self.xmax - self.xmin) / nx] * nx)
+        self.dely = np.array([(self.ymax - self.ymin) / ny] * ny)
+        self.delz = np.array([(self.zmax - self.zmin) / nz] * nz)
+        
+    def create_regular_grid_xy_and_defined_z(self, nx, ny, delz):
+        """Define a regular grid from defined project boundaries and given discretisations in x,y directions
+        and from a passed np.array in z-direction"""
+        self.nx = nx
+        self.ny = ny
+        self.nz = len(delz)
+        self.delx = np.array([(self.xmax - self.xmin) / nx] * nx)
+        self.dely = np.array([(self.ymax - self.ymin) / ny] * ny)
+        self.delz = delz
+        
         
     def get_dimensions_from_geomodeller(self, xml_filename):
         """Get grid dimensions from Geomodeller project
@@ -123,6 +134,8 @@ class GeoGrid():
         **Arguments**:
             - *xml_filename* = string: filename of Geomodeller XML file
         """
+        if not hasattr(self, 'cell_centers_x'): self.determine_cell_centers()
+
         # initialise grid
         self.grid = np.ndarray((self.nx, self.ny, self.nz), dtype="int")
         filename_ctypes = ctypes.c_char_p(xml_filename)
