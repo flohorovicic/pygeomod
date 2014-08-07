@@ -613,16 +613,6 @@ show the location of orientation data:
 .. image:: 3D-Structural-Data_files/3D-Structural-Data_47_0.png
 
 
-Und das ist fuer Jan
-====================
 
--  bla
--  bla2
-
-Markdown translates
-
-italic
-
-This is *italic* text and this is **bold**
 
 

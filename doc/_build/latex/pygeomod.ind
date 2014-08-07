@@ -3,233 +3,233 @@
 
   \bigletter A
   \item add\_to\_project\_name() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
-  \item adjust\_gridshape() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
+		\hyperpage{30}
+  \item adjust\_gridshape() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
   \item append\_drillhole\_data() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
+		\hyperpage{30}
 
   \indexspace
   \bigletter B
-  \item beta() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{34}
-  \item binomial() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{35}
+  \item beta() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{32}
+  \item binomial() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{33}
 
   \indexspace
   \bigletter C
   \item change\_foliation() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
+		\hyperpage{30}
   \item change\_foliation\_polarity() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
+		\hyperpage{30}
   \item change\_formation\_point\_pos() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
-  \item chisquare() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{36}
-  \item combine\_grids() (in module pygeomod.geogrid), \hyperpage{31}
-  \item combine\_with() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{64}
+		\hyperpage{30}
+  \item chisquare() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{34}
+  \item combine\_grids() (in module pygeomod.geogrid), \hyperpage{29}
+  \item combine\_with() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{62}
   \item create\_fault\_dict() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
+		\hyperpage{30}
   \item create\_formation\_dict() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
-  \item create\_formation\_subset() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
+		\hyperpage{30}
+  \item create\_formation\_subset() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
   \item create\_sections\_dict() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
+		\hyperpage{30}
   \item create\_TOUGH\_formation\_names() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{32}
+		\hyperpage{30}
 
   \indexspace
   \bigletter D
-  \item deepcopy\_tree() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{33}
-  \item define\_irregular\_grid() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
-  \item define\_regular\_grid() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
+  \item deepcopy\_tree() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{31}
+  \item define\_irregular\_grid() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
+  \item define\_regular\_grid() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
   \item delete\_drillhole\_data() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
-  \item determine\_cell\_centers() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
-  \item determine\_cell\_volumes() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
-  \item determine\_geology\_ids() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
-  \item determine\_id\_volumes() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
-  \item determine\_indicator\_grids() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
+		\hyperpage{31}
+  \item determine\_cell\_centers() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
+  \item determine\_cell\_volumes() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
+  \item determine\_geology\_ids() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
+  \item determine\_id\_volumes() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
+  \item determine\_indicator\_grids() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
 
   \indexspace
   \bigletter E
-  \item exponential() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{36}
-  \item export\_to\_vtk() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
-  \item extract\_range() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
+  \item exponential() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{34}
+  \item export\_to\_vtk() (pygeomod.geogrid.GeoGrid method), \hyperpage{27}
+  \item extract\_range() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
 
   \indexspace
   \bigletter F
-  \item f() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{37}
+  \item f() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{35}
 
   \indexspace
   \bigletter G
-  \item gamma() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{37}
-  \item GeoGrid (class in pygeomod.geogrid), \hyperpage{29}
-  \item geometric() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{38}
-  \item GeomodellerClass (class in pygeomod.geomodeller\_xml\_obj), \hyperpage{32}
+  \item gamma() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{35}
+  \item GeoGrid (class in pygeomod.geogrid), \hyperpage{27}
+  \item geometric() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{36}
+  \item GeomodellerClass (class in pygeomod.geomodeller\_xml\_obj), \hyperpage{30}
   \item get\_dimensions\_from\_geomodeller\_xml\_project() (pygeomod.geogrid.GeoGrid method), 
-		\hyperpage{30}
+		\hyperpage{28}
   \item get\_drillhole\_data() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_drillhole\_elements() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_drillholes\_old() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_fault\_parameters() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
-  \item get\_faults() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{33}
+		\hyperpage{31}
+  \item get\_faults() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{31}
   \item get\_folation\_polarity() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_foliation\_azimuth() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_foliation\_dip() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
-  \item get\_foliations() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{33}
+		\hyperpage{31}
+  \item get\_foliations() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{31}
   \item get\_formation\_data() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_formation\_names() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
-  \item get\_formation\_names() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
+		\hyperpage{31}
+  \item get\_formation\_names() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
   \item get\_formation\_parameters() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_formation\_point\_data() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
-  \item get\_formations() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{33}
+		\hyperpage{31}
+  \item get\_formations() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{31}
   \item get\_interface\_name() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_model\_extent() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
+		\hyperpage{31}
   \item get\_model\_range() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{33}
-  \item get\_name() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
-  \item get\_name\_mapping\_from\_dict() (pygeomod.geogrid.GeoGrid method), \hyperpage{30}
-  \item get\_name\_mapping\_from\_file() (pygeomod.geogrid.GeoGrid method), \hyperpage{30}
+		\hyperpage{31}
+  \item get\_name() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
+  \item get\_name\_mapping\_from\_dict() (pygeomod.geogrid.GeoGrid method), \hyperpage{28}
+  \item get\_name\_mapping\_from\_file() (pygeomod.geogrid.GeoGrid method), \hyperpage{28}
   \item get\_points\_in\_sections() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
+		\hyperpage{32}
   \item get\_pole\_points() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item get\_provenance() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
+		\hyperpage{32}
+  \item get\_provenance() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
   \item get\_provenance\_table() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item get\_provenances() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
-  \item get\_range() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
+		\hyperpage{32}
+  \item get\_provenances() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
+  \item get\_range() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
   \item get\_section\_names() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item get\_sections() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
-  \item get\_state() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{38}
+		\hyperpage{32}
+  \item get\_sections() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
+  \item get\_state() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{36}
   \item get\_stratigraphy\_list() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item gumbel() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{39}
+		\hyperpage{32}
+  \item gumbel() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{37}
 
   \indexspace
   \bigletter H
-  \item hypergeometric() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{40}
+  \item hypergeometric() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{38}
 
   \indexspace
   \bigletter L
-  \item laplace() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{41}
+  \item laplace() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{39}
   \item load\_deepcopy\_tree() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item load\_delxyz() (pygeomod.geogrid.GeoGrid method), \hyperpage{30}
-  \item load\_dimensions() (pygeomod.geogrid.GeoGrid method), \hyperpage{30}
+		\hyperpage{32}
+  \item load\_delxyz() (pygeomod.geogrid.GeoGrid method), \hyperpage{28}
+  \item load\_dimensions() (pygeomod.geogrid.GeoGrid method), \hyperpage{28}
   \item load\_geomodeller\_file() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item load\_grid() (pygeomod.geogrid.GeoGrid method), \hyperpage{30}
-  \item logistic() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{42}
-  \item lognormal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{42}
-  \item logseries() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{44}
+		\hyperpage{32}
+  \item load\_grid() (pygeomod.geogrid.GeoGrid method), \hyperpage{28}
+  \item logistic() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{40}
+  \item lognormal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{40}
+  \item logseries() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{42}
 
   \indexspace
   \bigletter M
-  \item multinomial() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{44}
-  \item multivariate\_normal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{45}
+  \item multinomial() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{42}
+  \item multivariate\_normal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{43}
 
   \indexspace
   \bigletter N
-  \item negative\_binomial() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{46}
-  \item noncentral\_chisquare() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{46}
-  \item noncentral\_f() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{47}
-  \item normal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{48}
+  \item negative\_binomial() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{44}
+  \item noncentral\_chisquare() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{44}
+  \item noncentral\_f() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{45}
+  \item normal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{46}
 
   \indexspace
   \bigletter O
-  \item optimial\_cell\_increase() (in module pygeomod.geogrid), \hyperpage{31}
+  \item optimial\_cell\_increase() (in module pygeomod.geogrid), \hyperpage{29}
 
   \indexspace
   \bigletter P
-  \item pareto() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{49}
-  \item parse() (pygeomod.struct\_data.Struct3DFoliations method), \hyperpage{64}
-  \item parse() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
-  \item permutation() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{49}
-  \item plot\_3D() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
-  \item plot\_plane() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
-  \item plot\_points() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
-  \item plot\_section() (pygeomod.geogrid.GeoGrid method), \hyperpage{30}
-  \item poisson() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{50}
-  \item power() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{50}
-  \item print\_unit\_names\_volumes() (pygeomod.geogrid.GeoGrid method), \hyperpage{31}
-  \item pygeomod (module), \hyperpage{66}
-  \item pygeomod.geogrid (module), \hyperpage{29}
-  \item pygeomod.geomodeller\_xml\_obj (module), \hyperpage{32}
-  \item pygeomod.struct\_data (module), \hyperpage{64}
+  \item pareto() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{47}
+  \item parse() (pygeomod.struct\_data.Struct3DFoliations method), \hyperpage{62}
+  \item parse() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
+  \item permutation() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{47}
+  \item plot\_3D() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
+  \item plot\_plane() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
+  \item plot\_points() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
+  \item plot\_section() (pygeomod.geogrid.GeoGrid method), \hyperpage{28}
+  \item poisson() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{48}
+  \item power() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{48}
+  \item print\_unit\_names\_volumes() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
+  \item pygeomod (module), \hyperpage{64}
+  \item pygeomod.geogrid (module), \hyperpage{27}
+  \item pygeomod.geomodeller\_xml\_obj (module), \hyperpage{30}
+  \item pygeomod.struct\_data (module), \hyperpage{62}
 
   \indexspace
   \bigletter R
-  \item rand() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{51}
-  \item randint() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{52}
-  \item randn() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{52}
-  \item random() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{53}
-  \item random\_integers() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{53}
-  \item random\_sample() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{54}
-  \item ranf() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{55}
-  \item rayleigh() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{55}
+  \item rand() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{49}
+  \item randint() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{50}
+  \item randn() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{50}
+  \item random() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{51}
+  \item random\_integers() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{51}
+  \item random\_sample() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{52}
+  \item ranf() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{53}
+  \item rayleigh() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{53}
   \item reload\_geomodeller\_file() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item remap\_ids() (pygeomod.geogrid.GeoGrid method), \hyperpage{31}
-  \item remove\_formations() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{65}
-  \item rename\_formations() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{66}
+		\hyperpage{32}
+  \item remap\_ids() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
+  \item remove\_formations() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{63}
+  \item rename\_formations() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{64}
 
   \indexspace
   \bigletter S
-  \item sample() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{56}
-  \item save() (pygeomod.struct\_data.Struct3DFoliations method), \hyperpage{64}
-  \item save() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{66}
-  \item seed() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{56}
-  \item set\_delxyz() (pygeomod.geogrid.GeoGrid method), \hyperpage{31}
-  \item set\_dimensions() (pygeomod.geogrid.GeoGrid method), \hyperpage{31}
+  \item sample() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{54}
+  \item save() (pygeomod.struct\_data.Struct3DFoliations method), \hyperpage{62}
+  \item save() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{64}
+  \item seed() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{54}
+  \item set\_delxyz() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
+  \item set\_dimensions() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
   \item set\_drillhole\_data() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
+		\hyperpage{32}
   \item set\_provenance\_table() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), 
-		\hyperpage{34}
-  \item set\_state() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{56}
-  \item shuffle() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{57}
-  \item standard\_cauchy() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{57}
-  \item standard\_exponential() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{58}
-  \item standard\_gamma() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{58}
-  \item standard\_normal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{58}
-  \item standard\_t() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{59}
-  \item Struct3DFoliations (class in pygeomod.struct\_data), \hyperpage{64}
-  \item Struct3DPoints (class in pygeomod.struct\_data), \hyperpage{64}
+		\hyperpage{32}
+  \item set\_state() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{54}
+  \item shuffle() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{55}
+  \item standard\_cauchy() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{55}
+  \item standard\_exponential() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{56}
+  \item standard\_gamma() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{56}
+  \item standard\_normal() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{56}
+  \item standard\_t() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{57}
+  \item Struct3DFoliations (class in pygeomod.struct\_data), \hyperpage{62}
+  \item Struct3DPoints (class in pygeomod.struct\_data), \hyperpage{62}
 
   \indexspace
   \bigletter T
-  \item thin() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{66}
-  \item triangular() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{60}
-  \item twt\_to\_depth() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
+  \item thin() (pygeomod.struct\_data.Struct3DPoints method), \hyperpage{64}
+  \item triangular() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{58}
+  \item twt\_to\_depth() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
 
   \indexspace
   \bigletter U
-  \item uniform() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{60}
-  \item update\_from\_geomodeller\_project() (pygeomod.geogrid.GeoGrid method), \hyperpage{31}
+  \item uniform() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{58}
+  \item update\_from\_geomodeller\_project() (pygeomod.geogrid.GeoGrid method), \hyperpage{29}
 
   \indexspace
   \bigletter V
-  \item vonmises() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{61}
+  \item vonmises() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{59}
 
   \indexspace
   \bigletter W
-  \item wald() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{62}
-  \item weibull() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{62}
-  \item write\_xml() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{34}
+  \item wald() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{60}
+  \item weibull() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{60}
+  \item write\_xml() (pygeomod.geomodeller\_xml\_obj.GeomodellerClass method), \hyperpage{32}
 
   \indexspace
   \bigletter Z
-  \item zipf() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{63}
+  \item zipf() (in module pygeomod.geomodeller\_xml\_obj), \hyperpage{61}
 
 \end{theindex}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/MacPorts 2014_1) (preloaded format=pdflatex 2014.7.16)  7 AUG 2014 11:47
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014/MacPorts 2014_1) (preloaded format=pdflatex 2014.7.16)  7 AUG 2014 13:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -947,7 +947,7 @@ LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <9> not available
 LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <10> not available
 (Font)              Font shape `T1/pcr/m/sl' tried instead on input line 251.
  [5]
-<3D-Structural-Data_6_0.png, id=144, 415.5525pt x 256.96pt>
+<3D-Structural-Data_6_0.png, id=139, 415.5525pt x 256.96pt>
 File: 3D-Structural-Data_6_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_6_0.png>
@@ -958,7 +958,7 @@ File: 3D-Structural-Data_6_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_6_0.png used on input line 290.
 (pdftex.def)             Requested size: 415.55148pt x 256.95937pt.
 
-<3D-Structural-Data_8_0.png, id=146, 1091.07625pt x 369.38pt>
+<3D-Structural-Data_8_0.png, id=141, 1091.07625pt x 369.38pt>
 File: 3D-Structural-Data_8_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_8_0.png>
@@ -969,7 +969,7 @@ File: 3D-Structural-Data_8_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_8_0.png used on input line 304.
 (pdftex.def)             Requested size: 469.755pt x 159.0332pt.
  [6 <./3D-Structural-Data_6_0.png>]
-<3D-Structural-Data_10_0.png, id=152, 1088.065pt x 369.38pt>
+<3D-Structural-Data_10_0.png, id=147, 1088.065pt x 369.38pt>
 File: 3D-Structural-Data_10_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_10_0.png>
@@ -980,7 +980,7 @@ File: 3D-Structural-Data_10_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_10_0.png used on input line 318.
 (pdftex.def)             Requested size: 469.755pt x 159.47847pt.
 
-<3D-Structural-Data_12_0.png, id=153, 574.145pt x 461.725pt>
+<3D-Structural-Data_12_0.png, id=148, 574.145pt x 461.725pt>
 File: 3D-Structural-Data_12_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_12_0.png>
@@ -991,7 +991,7 @@ File: 3D-Structural-Data_12_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_12_0.png used on input line 327.
 (pdftex.def)             Requested size: 469.755pt x 377.7856pt.
  [7 <./3D-Structural-Data_8_0.png> <./3D-Structural-Data_10_0.png>] [8 <./3D-St
-ructural-Data_12_0.png>] <3D-Structural-Data_17_0.png, id=166, 574.145pt x 461.
+ructural-Data_12_0.png>] <3D-Structural-Data_17_0.png, id=160, 574.145pt x 461.
 725pt>
 File: 3D-Structural-Data_17_0.png Graphic file (type png)
 
@@ -1003,7 +1003,7 @@ File: 3D-Structural-Data_17_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_17_0.png used on input line 376.
 (pdftex.def)             Requested size: 469.755pt x 377.7856pt.
  [9 <./3D-Structural-Data_17_0.png>]
-<3D-Structural-Data_23_1.png, id=173, 901.3675pt x 364.36125pt>
+<3D-Structural-Data_23_1.png, id=168, 901.3675pt x 364.36125pt>
 File: 3D-Structural-Data_23_1.png Graphic file (type png)
 
 <use 3D-Structural-Data_23_1.png>
@@ -1014,7 +1014,7 @@ File: 3D-Structural-Data_23_1.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_23_1.png used on input line 424.
 (pdftex.def)             Requested size: 469.755pt x 189.89146pt.
  [10 <./3D-Structural-Data_23_1.png>]
-<3D-Structural-Data_27_0.png, id=179, 928.46875pt x 369.38pt>
+<3D-Structural-Data_27_0.png, id=174, 928.46875pt x 369.38pt>
 File: 3D-Structural-Data_27_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_27_0.png>
@@ -1025,7 +1025,7 @@ File: 3D-Structural-Data_27_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_27_0.png used on input line 465.
 (pdftex.def)             Requested size: 469.755pt x 186.88768pt.
 
-<3D-Structural-Data_32_0.png, id=180, 928.46875pt x 369.38pt>
+<3D-Structural-Data_32_0.png, id=175, 928.46875pt x 369.38pt>
 File: 3D-Structural-Data_32_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_32_0.png>
@@ -1036,7 +1036,7 @@ File: 3D-Structural-Data_32_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_32_0.png used on input line 497.
 (pdftex.def)             Requested size: 469.755pt x 186.88768pt.
  [11 <./3D-Structural-Data_27_0.png>]
-<3D-Structural-Data_35_1.png, id=186, 1083.04625pt x 364.36125pt>
+<3D-Structural-Data_35_1.png, id=181, 1083.04625pt x 364.36125pt>
 File: 3D-Structural-Data_35_1.png Graphic file (type png)
 
 <use 3D-Structural-Data_35_1.png>
@@ -1052,7 +1052,7 @@ Package pdftex.def Info: 3D-Structural-Data_35_1.png used on input line 539.
 
 ]
 Chapter 3.
-<3D-Structural-Data_46_0.png, id=210, 574.145pt x 461.725pt>
+<3D-Structural-Data_46_0.png, id=205, 574.145pt x 461.725pt>
 File: 3D-Structural-Data_46_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_46_0.png>
@@ -1063,7 +1063,7 @@ File: 3D-Structural-Data_46_0.png Graphic file (type png)
 Package pdftex.def Info: 3D-Structural-Data_46_0.png used on input line 698.
 (pdftex.def)             Requested size: 469.755pt x 377.7856pt.
  [17]
-<3D-Structural-Data_47_0.png, id=215, 415.5525pt x 256.96pt>
+<3D-Structural-Data_47_0.png, id=210, 415.5525pt x 256.96pt>
 File: 3D-Structural-Data_47_0.png Graphic file (type png)
 
 <use 3D-Structural-Data_47_0.png>
@@ -1077,64 +1077,60 @@ Package pdftex.def Info: 3D-Structural-Data_47_0.png used on input line 704.
 
 ]
 Chapter 4.
-[21] [22
-
-]
-Chapter 5.
-[23] <Geomodeller-Export_11_0.png, id=244, 252.945pt x 249.93375pt>
+[21] <Geomodeller-Export_11_0.png, id=230, 252.945pt x 249.93375pt>
 File: Geomodeller-Export_11_0.png Graphic file (type png)
 
 <use Geomodeller-Export_11_0.png>
-Package pdftex.def Info: Geomodeller-Export_11_0.png used on input line 846.
+Package pdftex.def Info: Geomodeller-Export_11_0.png used on input line 829.
 (pdftex.def)             Requested size: 252.94438pt x 249.93314pt.
 File: Geomodeller-Export_11_0.png Graphic file (type png)
  <use Geomodeller-Export_11_0.png>
-Package pdftex.def Info: Geomodeller-Export_11_0.png used on input line 846.
+Package pdftex.def Info: Geomodeller-Export_11_0.png used on input line 829.
 (pdftex.def)             Requested size: 252.94438pt x 249.93314pt.
- [24 <./Geomodeller-Export_11_0.png>] [25]
-<Geomodeller-Export_25_1.png, id=254, 483.8075pt x 473.77pt>
+ [22 <./Geomodeller-Export_11_0.png>] [23]
+<Geomodeller-Export_25_1.png, id=240, 483.8075pt x 473.77pt>
 File: Geomodeller-Export_25_1.png Graphic file (type png)
 
 <use Geomodeller-Export_25_1.png>
-Package pdftex.def Info: Geomodeller-Export_25_1.png used on input line 966.
+Package pdftex.def Info: Geomodeller-Export_25_1.png used on input line 949.
 (pdftex.def)             Requested size: 483.80632pt x 473.76884pt.
 File: Geomodeller-Export_25_1.png Graphic file (type png)
  <use Geomodeller-Export_25_1.png>
-Package pdftex.def Info: Geomodeller-Export_25_1.png used on input line 966.
+Package pdftex.def Info: Geomodeller-Export_25_1.png used on input line 949.
 (pdftex.def)             Requested size: 469.755pt x 460.02625pt.
- [26]
-Overfull \vbox (0.7658pt too high) detected at line 1037
+ [24]
+Overfull \vbox (0.7658pt too high) detected at line 1020
  []
 
-[27 <./Geomodeller-Export_25_1.png>] [28]
-Chapter 6.
+[25 <./Geomodeller-Export_25_1.png>] [26]
+Chapter 5.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <12> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 1066.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 1049.
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 1079.
-[29
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 1062.
+[27
 
 ]
 LaTeX Font Info:    Font shape `T1/ptm/bx/it' in size <10> not available
-(Font)              Font shape `T1/ptm/b/it' tried instead on input line 1284.
- [30] [31] [32] [33] [34] [35]<<ot1tt.cmap>> [36] [37] [38] [39] [40]
-[41] [42] [43] [44] [45] [46]
-Underfull \hbox (badness 6493) in paragraph at lines 3145--3147
+(Font)              Font shape `T1/ptm/b/it' tried instead on input line 1267.
+ [28] [29] [30] [31] [32] [33]<<ot1tt.cmap>> [34] [35] [36] [37] [38]
+[39] [40] [41] [42] [43] [44]
+Underfull \hbox (badness 6493) in paragraph at lines 3128--3130
 []\T1/ptm/m/n/10 Weisstein, Eric W. ``Non-cen-tral F-Distribution.'' From MathW
 orld--A Wol-fram Web Re-source.
  []
 
-[47] [48] [49] [50] [51] [52] [53] [54] [55] [56] [57] [58] [59] [60] [61]
-[62] [63] [64] [65] [66]
-Chapter 7.
-[67
+[45] [46] [47] [48] [49] [50] [51] [52] [53] [54] [55] [56] [57] [58] [59]
+[60] [61] [62] [63] [64]
+Chapter 6.
+[65
 
-] [68
+] [66
 
-] [69
+] [67
 
 
-] (./pygeomod.ind [70
+] (./pygeomod.ind [68
 
 
 ]
@@ -1327,7 +1323,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 65--66
 []\T1/ptm/m/n/10 GeomodellerClass (class in py-ge-o-
  []
 
-[71
+[69
 
 ]
 Underfull \hbox (badness 10000) in paragraph at lines 66--68
@@ -1636,7 +1632,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 131--133
 \T1/ptm/m/n/10 mod.geomodeller_xml_obj.GeomodellerClass
  []
 
-[72]
+[70]
 Underfull \hbox (badness 10000) in paragraph at lines 135--136
 []\T1/ptm/m/n/10 lognormal() (in mod-ule py-ge-o-
  []
@@ -1782,7 +1778,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 205--206
 []\T1/ptm/m/n/10 standard_normal() (in mod-ule py-ge-o-
  []
 
-[73]
+[71]
 Underfull \hbox (badness 10000) in paragraph at lines 206--207
 []\T1/ptm/m/n/10 standard_t() (in mod-ule py-ge-o-
  []
@@ -1808,24 +1804,24 @@ Overfull \hbox (32.44977pt too wide) in paragraph at lines 229--230
 []\T1/ptm/m/n/10 write_xml() (py-ge-o-mod.geomodeller_xml_obj.GeomodellerClass
  []
 
-[74
+[72
 
 ])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 5055.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 5055.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 5038.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 5038.
  (./pygeomod.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 5055.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 5055.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 5038.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 5038.
 
 Package rerunfilecheck Info: File `pygeomod.out' has not changed.
-(rerunfilecheck)             Checksum: C6FD0A00699BC2D916C0096AF5233AF3;991.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 5055.
+(rerunfilecheck)             Checksum: 4ECC63CCF2DE258DE9E855BD8D2A001F;935.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 5038.
  ) 
 Here is how much of TeX's memory you used:
- 9591 strings out of 494213
- 139769 string characters out of 6157463
- 239127 words of memory out of 5000000
- 12354 multiletter control sequences out of 15000+600000
+ 9586 strings out of 494213
+ 139694 string characters out of 6157463
+ 239083 words of memory out of 5000000
+ 12352 multiletter control sequences out of 15000+600000
  69956 words of font info for 80 fonts, out of 8000000 for 9000
  431 hyphenation exceptions out of 8191
  36i,25n,45p,707b,571s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1849,10 +1845,10 @@ vr8a.pfb></opt/local/share/texmf-texlive/fonts/type1/urw/times/utmb8a.pfb></opt
 /local/share/texmf-texlive/fonts/type1/urw/times/utmbi8a.pfb></opt/local/share/
 texmf-texlive/fonts/type1/urw/times/utmr8a.pfb></opt/local/share/texmf-texlive/
 fonts/type1/urw/times/utmri8a.pfb>
-Output written on pygeomod.pdf (78 pages, 966124 bytes).
+Output written on pygeomod.pdf (76 pages, 964706 bytes).
 PDF statistics:
- 902 PDF objects out of 1000 (max. 8388607)
- 761 compressed objects within 8 object streams
- 248 named destinations out of 1000 (max. 500000)
- 218 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 888 PDF objects out of 1000 (max. 8388607)
+ 749 compressed objects within 8 object streams
+ 245 named destinations out of 1000 (max. 500000)
+ 210 words of extra memory for PDF output out of 10000 (max. 10000000)
 
