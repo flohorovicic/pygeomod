@@ -5,7 +5,11 @@ Created on 21/03/2014
 @author: Florian Wellmann (some parts originally developed by Erik Schaeffer)
 '''
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("\n\n\tMatplotlib not installed - plotting functions will not work!\n\n\n")
+
 # import mpl_toolkits
 # from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
@@ -90,27 +94,34 @@ class GeoGrid():
         (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax) = dim
         # calculate cell centre positions in real world coordinates
         
-    def create_regular_grid(self, nx, ny, nz):
+    def define_regular_grid(self, nx, ny, nz):
         """Define a regular grid from defined project boundaries and given discretisations"""
         self.nx = nx
         self.ny = ny
         self.nz = nz
-        self.delx = np.array([(self.xmax - self.xmin) / nx] * nx)
-        self.dely = np.array([(self.ymax - self.ymin) / ny] * ny)
-        self.delz = np.array([(self.zmax - self.zmin) / nz] * nz)
-        
-    def create_regular_grid_xy_and_defined_z(self, nx, ny, delz):
-        """Define a regular grid from defined project boundaries and given discretisations in x,y directions
-        and from a passed np.array in z-direction"""
-        self.nx = nx
-        self.ny = ny
-        self.nz = len(delz)
-        self.delx = np.array([(self.xmax - self.xmin) / nx] * nx)
-        self.dely = np.array([(self.ymax - self.ymin) / ny] * ny)
+        self.delx = np.ones(nx) * (self.xmax - self.xmin) / nx
+        self.dely = np.ones(ny) * (self.ymax - self.ymin) / ny
+        self.delz = np.ones(nz) * (self.zmax - self.zmin) / nz
+        # create (empty) grid object
+        self.grid = np.ndarray((nx, ny, nz))
+        # update model extent
+        (self.extent_x, self.extent_y, self.extent_z) = (sum(self.delx), sum(self.dely), sum(self.delz))        
+
+
+    def define_irregular_grid(self, delx, dely, delz):
+        """Set irregular grid according to delimter arrays in each direction"""
+        self.delx = delx
+        self.dely = dely
         self.delz = delz
+	self.nx = len(delx)
+	self.ny = len(dely)
+	self.nz = len(delz)
+        # create (empty) grid object
+        self.grid = np.ndarray((self.nx, self.ny, self.nz))
+        # update model extent
+        (self.extent_x, self.extent_y, self.extent_z) = (sum(self.delx), sum(self.dely), sum(self.delz))        
         
-        
-    def get_dimensions_from_geomodeller(self, xml_filename):
+    def get_dimensions_from_geomodeller_xml_project(self, xml_filename):
         """Get grid dimensions from Geomodeller project
         
         **Arguments**:
@@ -127,6 +138,9 @@ class GeoGrid():
         lib.get_model_bounds.restype = ndpointer(dtype=ctypes.c_int, shape=(6,))
         boundaries = lib.get_model_bounds(filename_ctypes)
         (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax) = boundaries
+	self.extent_x = self.xmax - self.xmin
+	self.extent_y = self.ymax - self.ymin
+	self.extent_z = self.zmax - self.zmin
         
     def update_from_geomodeller_project(self, xml_filename):
         """Update grid properties directly from Geomodeller project
@@ -134,14 +148,13 @@ class GeoGrid():
         **Arguments**:
             - *xml_filename* = string: filename of Geomodeller XML file
         """
-        if not hasattr(self, 'cell_centers_x'): self.determine_cell_centers()
-
-        # initialise grid
-        self.grid = np.ndarray((self.nx, self.ny, self.nz), dtype="int")
         filename_ctypes = ctypes.c_char_p(xml_filename)
         # create cell position list with [x0, y0, z0, ... xn, yn, zn]
         cell_position = []
         ids = []
+	# check if cell centers are defined - if not, do so!
+	if not hasattr(self, 'cell_centers_x'):
+            self.determine_cell_centers()
         for k in range(self.nz):
             for j in range(self.ny):
                 for i in range(self.nx):
@@ -162,6 +175,9 @@ class GeoGrid():
             self.grid[ids[i][0],ids[i][1],ids[i][2]] = formations_raw[i]
             
         
+
+        
+    
     def set_dimensions(self, **kwds):
         """Set model dimensions, if no argument provided: xmin = 0, max = sum(delx) and accordingly for y,z
         
@@ -211,6 +227,7 @@ class GeoGrid():
             - *savefig* = bool : save figure to file (default: show)
             - *fig_filename* = string : filename to save figure
         """
+	colorbar = kwds.get('colorbar', True)
         cmap = kwds.get('cmap', 'jet')
         rescale = kwds.get('rescale', False)
         ve = kwds.get('ve', 1.)
@@ -602,27 +619,49 @@ def combine_grids(G1, G2, direction, merge_type = 'keep_first', **kwds):
     elif direction == 'z':
         pass
       
+    
+      
+    
     # Return combined grid and results of overlap analysis, if determined  
     if overlap_analysis:
         return G_comb, G_overlap
     else:
         return G_comb
     
-    
+def optimial_cell_increase(starting_cell_width, n_cells, width):
+    """Determine an array with optimal cell width for a defined starting cell width,
+    total number of cells, and total width
 
-def regular_geogrid_from_geomodeller(xml_filename, nx, ny, nz):
-    """Create a regular geogrid from a geomodeller project
+    Basically, this function optimised a factor between two cells to obtain a total
+    width
 
     **Arguments**:
-        - *xml_filename* = string : Geomodeller porject file
-        - *nx*, *ny*, *nz* = int : number of cells in each direction
+    	- *starting_cell_width* = float : width of starting/ inner cell
+	- *n_cells* = int : total number of cells
+	- *total_width* = float : total width (sum over all elements in array)
+
+    **Returns**:
+        del_array : numpy.ndarray with cell discretisations
+    
+    Note: optmisation with scipy.optimize - better (analytical?) methods might exist but
+    I can't think of them at the moment
     """
-    G1 = GeoGrid()
-    G1.get_dimensions_from_geomodeller(xml_filename)
-    G1.create_regular_grid(nx, ny, nz)
-    G1.determine_cell_centers()
-    G1.update_from_geomodeller_project(xml_filename)        
-    return G1
+    import scipy.optimize
+    # define some helper functions
+    
+    def width_sum(inc_factor, inner_cell, n_cells, total_width):
+        return sum(del_array(inc_factor, inner_cell, n_cells)) - total_width
+
+    def del_array(inc_factor, inner_cell, n_cells):
+        return np.array([inner_cell * inc_factor**i for i in range(n_cells)])
+
+    # now the actual optimisation step:
+    opti_factor = scipy.optimize.fsolve(width_sum, 1.1, (starting_cell_width, n_cells, width))
+    
+    # return the discretisation array
+    return del_array(opti_factor, starting_cell_width, n_cells).flatten()
+
+
 
 if __name__ == '__main__':
     pass
