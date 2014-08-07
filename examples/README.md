@@ -1,4 +1,4 @@
 Examples for pygeomod
 =====================
 
-Some examples scripts for functionalities in the pygeomod package
+Please see the notebooks directory for several IPython notebooks with examples on module usage.
