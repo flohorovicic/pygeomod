@@ -1,0 +1,3 @@
+v0.2 - 07/08/2014
+Added struct_data.py module to manipulate exported point and orientation data sets;
+Included notebook directory and several IPython notebooks for documentation, examples, and tutorials

@@ -11,7 +11,7 @@ def read(fname):
 
 
 setup(name='pygeomod',
-      version='0.1',
+      version='0.2.0',
       description='Python wrappers for Geomodeller API and input files',
       long_description=read('README.md'),
       classifiers=[
