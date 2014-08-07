@@ -1,0 +1,760 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pygeomod.geogrid &mdash; pygeomod 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pygeomod 0.2 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pygeomod 0.2 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pygeomod.geogrid</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;Module with classes and methods to analyse and process exported geomodel grids</span>
+
+<span class="sd">Created on 21/03/2014</span>
+
+<span class="sd">@author: Florian Wellmann (some parts originally developed by Erik Schaeffer)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n\n\t</span><span class="s">Matplotlib not installed - plotting functions will not work!</span><span class="se">\n\n\n</span><span class="s">&quot;</span><span class="p">)</span>
+
+<span class="c"># import mpl_toolkits</span>
+<span class="c"># from matplotlib.ticker import MultipleLocator, FormatStrFormatter</span>
+
+<span class="c"># to convert python variable types to cpp types</span>
+<span class="kn">import</span> <span class="nn">ctypes</span>
+<span class="c"># to create array</span>
+<span class="kn">from</span> <span class="nn">numpy.ctypeslib</span> <span class="kn">import</span> <span class="n">ndpointer</span>
+<span class="c"># to create folder</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="c"># read out and change xml file (here only used to read out model boundary information)</span>
+<span class="kn">import</span> <span class="nn">geomodeller_xml_obj</span> <span class="kn">as</span> <span class="nn">GO</span>
+
+
+<div class="viewcode-block" id="GeoGrid"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid">[docs]</a><span class="k">class</span> <span class="nc">GeoGrid</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Object definition for exported geomodel grids&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;GeoGrid contains methods to load, analyse, and process exported geomodel grids</span>
+<span class="sd">        </span>
+<span class="sd">        **Optional Keywords**:</span>
+<span class="sd">            - *grid_filename* = string : filename of exported grid</span>
+<span class="sd">            - *delxyz_filename* = string : file with model discretisation</span>
+<span class="sd">            - *dimensions_filename* = string : file with model dimension (coordinates)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;grid_filename&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid_filename</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;grid_filename&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;delxyz_filename&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delxyz_filename</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;delxyz_filename&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;dimensions_filename&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dimensions_filename</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;dimensions_filename&#39;</span><span class="p">]</span>
+            
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">G_other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine grid with another GeoGrid if regions are overlapping&quot;&quot;&quot;</span>
+        <span class="c"># check overlap</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span>
+        <span class="k">print</span> <span class="n">G_other</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">G_other</span><span class="o">.</span><span class="n">ymax</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">G_other</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span> <span class="ow">and</span> <span class="n">G_other</span><span class="o">.</span><span class="n">ymin</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">):</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Grids overlapping in y-direction between </span><span class="si">%.0f</span><span class="s"> and </span><span class="si">%.0f</span><span class="s">&quot;</span> <span class="o">%</span>
+                  <span class="p">(</span><span class="n">G_other</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span><span class="p">))</span>
+    
+<div class="viewcode-block" id="GeoGrid.load_grid"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.load_grid">[docs]</a>    <span class="k">def</span> <span class="nf">load_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load exported grid, discretisation and dimensions from file&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;grid_filename&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;Grid filename is not defined!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid_filename</span><span class="p">,</span> 
+                               <span class="n">delimiter</span> <span class="o">=</span> <span class="s">&#39;,&#39;</span><span class="p">,</span> 
+                               <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">,</span>
+                               <span class="n">unpack</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;delxyz_filename&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_delxyz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delxyz_filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjust_gridshape</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;dimensions_filename&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions_filename</span><span class="p">)</span>    
+    </div>
+<div class="viewcode-block" id="GeoGrid.load_delxyz"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.load_delxyz">[docs]</a>    <span class="k">def</span> <span class="nf">load_delxyz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delxyz_filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load grid discretisation from file&quot;&quot;&quot;</span>
+        <span class="n">del_lines</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">delxyz_filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">d0</span> <span class="o">=</span> <span class="n">del_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;*&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">d0</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d0</span><span class="p">[</span><span class="mi">0</span><span class="p">]))])</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="n">del_lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;*&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">d1</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">d1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))])</span>
+        <span class="n">d2</span> <span class="o">=</span> <span class="n">del_lines</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">d2</span><span class="p">])</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nz</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extent_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.set_delxyz"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.set_delxyz">[docs]</a>    <span class="k">def</span> <span class="nf">set_delxyz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delxyz</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set delx, dely, delz arrays explicitly and update additional attributes</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *delxyz* = (delx-array, dely-array, delz-array): arrays with cell dimensions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delz</span> <span class="o">=</span> <span class="n">delxyz</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nz</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extent_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>        
+        
+        </div>
+<div class="viewcode-block" id="GeoGrid.load_dimensions"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.load_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">load_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions_filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load project dimensions from file&quot;&quot;&quot;</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">dimensions_filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)]</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span><span class="p">)</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="c"># calculate cell centre positions in real world coordinates</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.define_regular_grid"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.define_regular_grid">[docs]</a>    <span class="k">def</span> <span class="nf">define_regular_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nz</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Define a regular grid from defined project boundaries and given discretisations&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">=</span> <span class="n">nx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">=</span> <span class="n">ny</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nz</span> <span class="o">=</span> <span class="n">nz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">nx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ny</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ymax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span> <span class="o">/</span> <span class="n">ny</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nz</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">nz</span>
+        <span class="c"># create (empty) grid object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nz</span><span class="p">))</span>
+        <span class="c"># update model extent</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extent_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>        
+
+</div>
+<div class="viewcode-block" id="GeoGrid.define_irregular_grid"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.define_irregular_grid">[docs]</a>    <span class="k">def</span> <span class="nf">define_irregular_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delx</span><span class="p">,</span> <span class="n">dely</span><span class="p">,</span> <span class="n">delz</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set irregular grid according to delimter arrays in each direction&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delx</span> <span class="o">=</span> <span class="n">delx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dely</span> <span class="o">=</span> <span class="n">dely</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delz</span> <span class="o">=</span> <span class="n">delz</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">delx</span><span class="p">)</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dely</span><span class="p">)</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">nz</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">delz</span><span class="p">)</span>
+        <span class="c"># create (empty) grid object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nz</span><span class="p">))</span>
+        <span class="c"># update model extent</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extent_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>        
+        </div>
+<div class="viewcode-block" id="GeoGrid.get_dimensions_from_geomodeller_xml_project"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.get_dimensions_from_geomodeller_xml_project">[docs]</a>    <span class="k">def</span> <span class="nf">get_dimensions_from_geomodeller_xml_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml_filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get grid dimensions from Geomodeller project</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *xml_filename* = string: filename of Geomodeller XML file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Note: this implementation is based on the Geomodeller API</span>
+        <span class="c"># The boundaries could theoretically also be extracted from the XML file</span>
+        <span class="c"># directly, e.g. using the geomodeller_xml_obj module - but this would</span>
+        <span class="c"># require an additional module being loaded, so avoid here!</span>
+        <span class="n">filename_ctypes</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">(</span><span class="n">xml_filename</span><span class="p">)</span>
+        <span class="c"># get model boundaries</span>
+        <span class="n">lib</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="s">&#39;./libgeomod.so&#39;</span><span class="p">)</span> <span class="c">#linux</span>
+        <span class="c">#lib = ctypes.windll.libgeomod #windows</span>
+        <span class="n">lib</span><span class="o">.</span><span class="n">get_model_bounds</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,))</span>
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">get_model_bounds</span><span class="p">(</span><span class="n">filename_ctypes</span><span class="p">)</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span><span class="p">)</span> <span class="o">=</span> <span class="n">boundaries</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">extent_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">extent_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span>
+	<span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.update_from_geomodeller_project"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.update_from_geomodeller_project">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_geomodeller_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml_filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update grid properties directly from Geomodeller project</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *xml_filename* = string: filename of Geomodeller XML file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename_ctypes</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">(</span><span class="n">xml_filename</span><span class="p">)</span>
+        <span class="c"># create cell position list with [x0, y0, z0, ... xn, yn, zn]</span>
+        <span class="n">cell_position</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="c"># check if cell centers are defined - if not, do so!</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;cell_centers_x&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_cell_centers</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nz</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">):</span>
+                    <span class="n">cell_position</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_centers_x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">cell_position</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_centers_y</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                    <span class="n">cell_position</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_centers_z</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                    <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">))</span>
+        
+        <span class="c"># prepare variables for cpp function</span>
+        <span class="n">coord_ctypes</span> <span class="o">=</span> <span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_position</span><span class="p">))(</span><span class="o">*</span><span class="n">cell_position</span><span class="p">)</span>
+        <span class="n">coord_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_position</span><span class="p">)</span>
+        <span class="c"># call cpp function</span>
+        <span class="n">lib</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="s">&#39;./libgeomod.so&#39;</span><span class="p">)</span>
+        <span class="n">lib</span><span class="o">.</span><span class="n">compute_irregular_grid</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">coord_len</span><span class="o">/</span><span class="mi">3</span><span class="p">,))</span>
+        <span class="n">formations_raw</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">compute_irregular_grid</span><span class="p">(</span><span class="n">filename_ctypes</span><span class="p">,</span> <span class="n">coord_ctypes</span><span class="p">,</span> <span class="n">coord_len</span><span class="p">)</span>
+        <span class="c"># re-sort formations into array</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">formations_raw</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">formations_raw</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            
+        
+
+        
+    </div>
+<div class="viewcode-block" id="GeoGrid.set_dimensions"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.set_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">set_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set model dimensions, if no argument provided: xmin = 0, max = sum(delx) and accordingly for y,z</span>
+<span class="sd">        </span>
+<span class="sd">        **Optional keywords**:</span>
+<span class="sd">            - *dim* = (xmin, xmax, ymin, ymax, zmin, zmax) : set dimensions explicitly</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;dim&quot;</span><span class="p">):</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span><span class="p">)</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;dim&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">))</span>
+    </div>
+<div class="viewcode-block" id="GeoGrid.determine_cell_centers"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.determine_cell_centers">[docs]</a>    <span class="k">def</span> <span class="nf">determine_cell_centers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine cell centers for all coordinate directions in &quot;real-world&quot; coordinates&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;xmin&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;Please define grid dimensions first&quot;</span><span class="p">)</span>
+        <span class="n">sum_delx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">)</span>
+        <span class="n">sum_dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">)</span>
+        <span class="n">sum_delz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell_centers_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sum_delx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="mf">2.</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">)])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell_centers_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sum_dely</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="mf">2.</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">)])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell_centers_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sum_delz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="mf">2.</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nz</span><span class="p">)])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.adjust_gridshape"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.adjust_gridshape">[docs]</a>    <span class="k">def</span> <span class="nf">adjust_gridshape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reshape numpy array to reflect model dimensions&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nz</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="c"># self.grid = np.swapaxes(self.grid, 0, 1)</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.plot_section"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.plot_section">[docs]</a>    <span class="k">def</span> <span class="nf">plot_section</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">cell_pos</span><span class="o">=</span><span class="s">&#39;center&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot a section through the model in a given coordinate direction</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *direction* = &#39;x&#39;, &#39;y&#39;, &#39;z&#39; : coordinate direction for section position</span>
+<span class="sd">            - *cell_pos* = int/&#39;center&#39;,&#39;min&#39;,&#39;max&#39; : cell position, can be given as</span>
+<span class="sd">            value of cell id, or as &#39;center&#39; (default), &#39;min&#39;, &#39;max&#39; for simplicity</span>
+<span class="sd">            </span>
+<span class="sd">        **Optional Keywords**:</span>
+<span class="sd">            - *cmap* = mpl.colormap : define colormap for plot (default: jet)</span>
+<span class="sd">            - *colorbar* = bool: attach colorbar (default: True)</span>
+<span class="sd">            - *rescale* = bool: rescale color bar to range of visible slice (default: False)</span>
+<span class="sd">            - *ve* = float : vertical exageration (for plots in x,y-direction)</span>
+<span class="sd">            - *figsize* = (x,y) : figsize settings for plot</span>
+<span class="sd">            - *ax* = matplotlib.axis : add plot to this axis (default: new axis)</span>
+<span class="sd">                    if axis is defined, the axis is returned and the plot not shown</span>
+<span class="sd">                    Note: if ax is passed, colorbar is False per default!</span>
+<span class="sd">            - *savefig* = bool : save figure to file (default: show)</span>
+<span class="sd">            - *fig_filename* = string : filename to save figure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+	<span class="n">colorbar</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;colorbar&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;cmap&#39;</span><span class="p">,</span> <span class="s">&#39;jet&#39;</span><span class="p">)</span>
+        <span class="n">rescale</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;rescale&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="n">ve</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ve&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+        <span class="n">figsize</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;figsize&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;x&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cell_pos</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="c"># decipher cell position</span>
+                <span class="k">if</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;center&#39;</span> <span class="ow">or</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;centre&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="k">elif</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">elif</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">cell_pos</span>
+            <span class="n">grid_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">pos</span><span class="p">,:,:]</span>
+            <span class="n">grid_slice</span> <span class="o">=</span> <span class="n">grid_slice</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+            <span class="n">aspect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">extent_x</span> <span class="o">*</span> <span class="n">ve</span>
+        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;y&#39;</span><span class="p">:</span>           
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cell_pos</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="c"># decipher cell position</span>
+                <span class="k">if</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;center&#39;</span> <span class="ow">or</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;centre&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="k">elif</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">elif</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ny</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">cell_pos</span>
+            <span class="n">grid_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[:,</span><span class="n">pos</span><span class="p">,:]</span>
+            <span class="n">grid_slice</span> <span class="o">=</span> <span class="n">grid_slice</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+            <span class="n">aspect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extent_z</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">extent_y</span> <span class="o">*</span> <span class="n">ve</span>
+        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;z&#39;</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cell_pos</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="c"># decipher cell position</span>
+                <span class="k">if</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;center&#39;</span> <span class="ow">or</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;centre&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nz</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="k">elif</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">elif</span> <span class="n">cell_pos</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nz</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">cell_pos</span>
+            <span class="n">grid_slice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[:,:,</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>           
+            <span class="n">aspect</span> <span class="o">=</span> <span class="mf">1.</span>
+            
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;ax&#39;</span><span class="p">):</span>
+            <span class="n">colorbar</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;colorbar&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+            <span class="c"># create new axis for plot</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">colorbar</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;ax&#39;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;unit_ids&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_geology_ids</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">rescale</span><span class="p">:</span>
+            <span class="n">vmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">grid_slice</span><span class="p">)</span>
+            <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">grid_slice</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># use global range for better comparison</span>
+            <span class="n">vmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span><span class="p">)</span>
+            <span class="n">vmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span><span class="p">)</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">grid_slice</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s">&#39;nearest&#39;</span><span class="p">,</span>
+                       <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span>
+                       <span class="n">origin</span><span class="o">=</span><span class="s">&#39;lower_left&#39;</span><span class="p">,</span>
+                       <span class="n">vmin</span> <span class="o">=</span> <span class="n">vmin</span><span class="p">,</span>
+                       <span class="n">vmax</span> <span class="o">=</span> <span class="n">vmax</span><span class="p">,</span>
+                       <span class="n">aspect</span> <span class="o">=</span> <span class="n">aspect</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">colorbar</span><span class="p">:</span>
+<span class="c">#            divider = mpl_toolkits.axes_grid1.make_axes_locatable(ax)</span>
+<span class="c">#            cax = divider.append_axes(&quot;bottom&quot;, size=&quot;5%&quot;, pad=0.2)</span>
+            <span class="n">cbar1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s">&quot;horizontal&quot;</span><span class="p">)</span>        
+            <span class="n">ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">vmax</span><span class="o">-</span><span class="n">vmin</span><span class="p">)</span><span class="o">/</span><span class="mf">1.2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+            <span class="n">cbar1</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span>
+    <span class="c">#         cbar1.set_ticks(self.unit_ids[::int(np.log2(len(self.unit_ids)/2))])</span>
+            <span class="n">cbar1</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s">&quot;Geology ID&quot;</span><span class="p">)</span>
+    <span class="c">#         cax.xaxis.set_major_formatter(FormatStrFormatter(&quot;%d&quot;))</span>
+        
+        
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;ax&quot;</span><span class="p">):</span>
+            <span class="c"># return image and do not show</span>
+            <span class="k">return</span> <span class="n">im</span>
+        
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;savefig&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;savefig&#39;</span><span class="p">]:</span>
+            <span class="c"># save to file</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;fig_filename&quot;</span><span class="p">,</span> <span class="s">&quot;grid_section_direction_</span><span class="si">%s</span><span class="s">_pos_</span><span class="si">%d</span><span class="s">.png&quot;</span> <span class="o">%</span>
+                                <span class="p">(</span><span class="n">direction</span><span class="p">,</span> <span class="n">cell_pos</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.export_to_vtk"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.export_to_vtk">[docs]</a>    <span class="k">def</span> <span class="nf">export_to_vtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtk_filename</span><span class="o">=</span><span class="s">&quot;geo_grid&quot;</span><span class="p">,</span> <span class="n">real_coords</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Export grid to VTK for visualisation</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *vtk_filename* = string : vtk filename (obviously...)</span>
+<span class="sd">            - *real_coords* = bool : model extent in &quot;real world&quot; coordinates</span>
+<span class="sd">            </span>
+<span class="sd">        **Optional Keywords**:</span>
+<span class="sd">            - *grid* = numpy grid : grid to save to vtk (default: self.grid)</span>
+<span class="sd">            - *var_name* = string : name of variable to plot (default: Geology)</span>
+<span class="sd">        </span>
+<span class="sd">        Note: requires pyevtk, available at: https://bitbucket.org/pauloh/pyevtk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;grid&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">)</span>
+        <span class="n">var_name</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;var_name&quot;</span><span class="p">,</span> <span class="s">&quot;Geology&quot;</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">evtk.hl</span> <span class="kn">import</span> <span class="n">gridToVTK</span>
+        <span class="c"># define coordinates</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ny</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nz</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">)</span>
+        <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">)</span>
+        <span class="n">z</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">)</span>
+        
+        <span class="c"># plot in coordinates</span>
+        <span class="k">if</span> <span class="n">real_coords</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span>
+            <span class="n">z</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span>
+        
+        
+        <span class="n">gridToVTK</span><span class="p">(</span><span class="n">vtk_filename</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span>
+                  <span class="n">cellData</span> <span class="o">=</span> <span class="p">{</span><span class="n">var_name</span><span class="p">:</span> <span class="n">grid</span><span class="p">})</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.determine_geology_ids"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.determine_geology_ids">[docs]</a>    <span class="k">def</span> <span class="nf">determine_geology_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine all ids assigned to cells in the grid&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.get_name_mapping_from_file"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.get_name_mapping_from_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_name_mapping_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the mapping between unit_ids in the model and real geological names</span>
+<span class="sd">        from a csv file (e.g. the SHEMAT property file)</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *filename* = string : filename of csv file with id, name entries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit_name</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">filelines</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">filelines</span><span class="p">:</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unit_name</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            </div>
+<div class="viewcode-block" id="GeoGrid.get_name_mapping_from_dict"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.get_name_mapping_from_dict">[docs]</a>    <span class="k">def</span> <span class="nf">get_name_mapping_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_name_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the name mapping directly from a dictionary</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *unit_name_dict* = dict with &quot;name&quot; : unit_id (int) pairs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit_name</span> <span class="o">=</span> <span class="n">unit_name_dict</span>
+            
+            </div>
+<div class="viewcode-block" id="GeoGrid.remap_ids"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.remap_ids">[docs]</a>    <span class="k">def</span> <span class="nf">remap_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping_dictionary</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remap geological unit ids to new ids as defined in mapping dictionary</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *mapping_dictionary* = dict : {1 : 1, 2 : 3, ...} : e.g.: retain</span>
+<span class="sd">            id 1, but map id 2 to 3 (note: if id not specified, it will be retained)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># first step: create a single mesh for each id to avoid accidential</span>
+        <span class="c"># overwriting below (there might be a better solution...)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;unit_ids&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_geology_ids</span><span class="p">()</span>
+        <span class="n">geol_grid_ind</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">mapping_dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">geol_grid_ind</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">==</span> <span class="n">k</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Remap id </span><span class="si">%d</span><span class="s"> -&gt; </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">))</span>
+        <span class="c"># now reassign values in actual grid</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">mapping_dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Reassign id </span><span class="si">%d</span><span class="s"> to grid&quot;</span> <span class="o">%</span> <span class="n">v</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">geol_grid_ind</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="c"># update global geology ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">determine_geology_ids</span><span class="p">()</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.determine_cell_volumes"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.determine_cell_volumes">[docs]</a>    <span class="k">def</span> <span class="nf">determine_cell_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine cell volumes for each cell (e.g. for total formation volume calculation)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell_volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">dz</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delz</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">dy</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dely</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">dx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delx</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cell_volume</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">dx</span> <span class="o">*</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">dz</span>        
+    
+    </div>
+<div class="viewcode-block" id="GeoGrid.determine_indicator_grids"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.determine_indicator_grids">[docs]</a>    <span class="k">def</span> <span class="nf">determine_indicator_grids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine indicator grids for all geological units&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indicator_grids</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;unit_ids&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_geology_ids</span><span class="p">()</span>
+        <span class="n">grid_ones</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indicator_grids</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid_ones</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">==</span> <span class="n">unit_id</span><span class="p">)</span>
+     </div>
+<div class="viewcode-block" id="GeoGrid.determine_id_volumes"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.determine_id_volumes">[docs]</a>    <span class="k">def</span> <span class="nf">determine_id_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the total volume of each unit id in the grid</span>
+<span class="sd">        </span>
+<span class="sd">        (for example for cell discretisation studies, etc.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;cell_volume&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_cell_volumes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;indicator_grids&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_indicator_grids</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id_volumes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_volumes</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indicator_grids</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_volume</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeoGrid.print_unit_names_volumes"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.GeoGrid.print_unit_names_volumes">[docs]</a>    <span class="k">def</span> <span class="nf">print_unit_names_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Formatted output to STDOUT of unit names (or ids, if names are note</span>
+<span class="sd">        defined) and calculated volumes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;id_vikumes&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">determine_id_volumes</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&quot;unit_name&quot;</span><span class="p">):</span>
+            <span class="c"># print with real geological names</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Total volumes of modelled geological units:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%26s</span><span class="s"> : </span><span class="si">%.2f</span><span class="s"> km^3&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unit_name</span><span class="p">[</span><span class="n">unit_id</span><span class="p">],</span> 
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">id_volumes</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">/</span><span class="mf">1E9</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># print with unit ids only</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Total volumes of modelled geological units:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%3d</span><span class="s"> : </span><span class="si">%.2f</span><span class="s"> km^3&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> 
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">id_volumes</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">/</span><span class="mf">1E9</span><span class="p">))</span>
+            
+                
+            
+        
+        
+        
+        
+<span class="c"># ******************************************************************************                                                                               </span>
+<span class="c">#  Some additional helper functions   </span>
+<span class="c"># ******************************************************************************                                                                               </span>
+        </div></div>
+<div class="viewcode-block" id="combine_grids"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.combine_grids">[docs]</a><span class="k">def</span> <span class="nf">combine_grids</span><span class="p">(</span><span class="n">G1</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">merge_type</span> <span class="o">=</span> <span class="s">&#39;keep_first&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Combine two grids along one axis</span>
+<span class="sd">    </span>
+<span class="sd">    ..Note: this implementation assumes (for now) that the overlap is perfectly matching,</span>
+<span class="sd">    i.e. grid cell sizes identical and at equal positions, or that they are perfectly adjacent!</span>
+<span class="sd">    </span>
+<span class="sd">    **Arguments**:</span>
+<span class="sd">        - G1, G2 = GeoGrid : grids to be combined</span>
+<span class="sd">        - direction = &#39;x&#39;, &#39;y&#39;, &#39;z&#39;: direction in which grids are combined</span>
+<span class="sd">        - merge_type = method to combine grid:</span>
+<span class="sd">            &#39;keep_first&#39; : keep elements of first grid (default)</span>
+<span class="sd">            &#39;keep_second&#39; : keep elements of second grid</span>
+<span class="sd">            &#39;random&#39; : randomly choose an element to retain</span>
+<span class="sd">        ..Note: all other dimensions must be matching perfectly!!</span>
+<span class="sd">    </span>
+<span class="sd">    **Optional keywords**:</span>
+<span class="sd">        - *overlap_analysis* = bool : perform a detailed analysis of the overlapping area, including</span>
+<span class="sd">        mismatch. Also returns a second item, a GeoGrid with information on mismatch!</span>
+<span class="sd">    </span>
+<span class="sd">    **Returns**:</span>
+<span class="sd">        - *G_comb* = GeoGrid with combined grid</span>
+<span class="sd">        - *G_overlap* = Geogrid with analysis of overlap (of overlap_analysis=True)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">overlap_analysis</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;overlap_analysis&quot;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="c"># first step: determine overlap</span>
+    <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;x&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmax</span> <span class="o">&gt;</span> <span class="n">G1</span><span class="o">.</span><span class="n">xmax</span><span class="p">:</span>
+            <span class="n">overlap_min</span> <span class="o">=</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmin</span>
+            <span class="n">overlap_max</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">xmax</span>
+            <span class="c"># identifier alias for grids with higher/ lower values</span>
+            <span class="n">G_high</span> <span class="o">=</span> <span class="n">G2</span>
+            <span class="n">G_low</span> <span class="o">=</span> <span class="n">G1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">overlap_min</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">xmin</span>
+            <span class="n">overlap_max</span> <span class="o">=</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmax</span>
+            <span class="c"># identifier alias for grids with higher/ lower values</span>
+            <span class="n">G_high</span> <span class="o">=</span> <span class="n">G1</span>
+            <span class="n">G_low</span> <span class="o">=</span> <span class="n">G2</span>
+
+        <span class="c"># check if all other dimensions are perfectly matching </span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">ymin</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">zmin</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmin</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">ymax</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymax</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">zmax</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmax</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Other dimensions (apart from </span><span class="si">%s</span><span class="s">) not perfectly matching! Check and try again!&quot;</span> <span class="o">%</span> <span class="n">direction</span><span class="p">)</span>    
+    
+    <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;y&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="n">G1</span><span class="o">.</span><span class="n">ymax</span><span class="p">:</span>
+            <span class="n">overlap_min</span> <span class="o">=</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymin</span>
+            <span class="n">overlap_max</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">ymax</span>
+            <span class="c"># identifier alias for grids with higher/ lower values</span>
+            <span class="n">G_high</span> <span class="o">=</span> <span class="n">G2</span>
+            <span class="n">G_low</span> <span class="o">=</span> <span class="n">G1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">overlap_min</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">ymin</span>
+            <span class="n">overlap_max</span> <span class="o">=</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymax</span>
+            <span class="c"># identifier alias for grids with higher/ lower values</span>
+            <span class="n">G_high</span> <span class="o">=</span> <span class="n">G1</span>
+            <span class="n">G_low</span> <span class="o">=</span> <span class="n">G2</span>
+
+        <span class="c"># check if all other dimensions are perfectly matching </span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">xmin</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">zmin</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmin</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">xmax</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmax</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">zmax</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmax</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Other dimensions (apart from </span><span class="si">%s</span><span class="s">) not perfectly matching! Check and try again!&quot;</span> <span class="o">%</span> <span class="n">direction</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;z&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmax</span> <span class="o">&gt;</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmax</span><span class="p">:</span>
+            <span class="n">overlap_min</span> <span class="o">=</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmin</span>
+            <span class="n">overlap_max</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmax</span>
+            <span class="c"># identifier alias for grids with higher/ lower values</span>
+            <span class="n">G_high</span> <span class="o">=</span> <span class="n">G2</span>
+            <span class="n">G_low</span> <span class="o">=</span> <span class="n">G1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">overlap_min</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmin</span>
+            <span class="n">overlap_max</span> <span class="o">=</span> <span class="n">G2</span><span class="o">.</span><span class="n">zmax</span>
+            <span class="c"># identifier alias for grids with higher/ lower values</span>
+            <span class="n">G_high</span> <span class="o">=</span> <span class="n">G1</span>
+            <span class="n">G_low</span> <span class="o">=</span> <span class="n">G2</span>
+
+        <span class="c"># check if all other dimensions are perfectly matching </span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">ymin</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">xmin</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">ymax</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymax</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">xmax</span> <span class="o">!=</span> <span class="n">G2</span><span class="o">.</span><span class="n">xmax</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Other dimensions (apart from </span><span class="si">%s</span><span class="s">) not perfectly matching! Check and try again!&quot;</span> <span class="o">%</span> <span class="n">direction</span><span class="p">)</span>
+
+    <span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap_max</span> <span class="o">-</span> <span class="n">overlap_min</span>
+        
+    <span class="k">if</span> <span class="n">overlap</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Grids perfectly adjacent&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">overlap</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;No overlap between grids! Check and try again!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Positive overlap in </span><span class="si">%s</span><span class="s"> direction of </span><span class="si">%f</span><span class="s"> meters&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">direction</span><span class="p">,</span> <span class="n">overlap</span><span class="p">))</span>
+      
+    <span class="c"># determine cell centers</span>
+    <span class="n">G1</span><span class="o">.</span><span class="n">determine_cell_centers</span><span class="p">()</span>
+    <span class="n">G2</span><span class="o">.</span><span class="n">determine_cell_centers</span><span class="p">()</span>
+    
+    <span class="c"># intialise new grid</span>
+    <span class="n">G_comb</span> <span class="o">=</span> <span class="n">GeoGrid</span><span class="p">()</span>
+    <span class="c"># initialise overlap grid, if analyis performed</span>
+    <span class="k">if</span> <span class="n">overlap_analysis</span><span class="p">:</span>
+        <span class="n">G_overlap</span> <span class="o">=</span> <span class="n">GeoGrid</span><span class="p">()</span>
+    
+    
+    <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;x&#39;</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;y&#39;</span><span class="p">:</span>
+        <span class="c">#=======================================================================</span>
+        <span class="c"># Perform overlap analysis</span>
+        <span class="c">#=======================================================================</span>
+        
+        <span class="c"># initialise overlap grid with dimensions of overlap</span>
+        <span class="n">G_overlap</span><span class="o">.</span><span class="n">set_dimensions</span><span class="p">(</span><span class="n">dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="n">overlap_min</span><span class="p">,</span> <span class="n">overlap_max</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmax</span><span class="p">))</span>
+        <span class="n">G_low_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">G_low</span><span class="o">.</span><span class="n">cell_centers_y</span> <span class="o">&gt;</span> <span class="n">overlap_min</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">G_high_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">G_high</span><span class="o">.</span><span class="n">cell_centers_y</span> <span class="o">&lt;</span> <span class="n">overlap_max</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">delx</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">delx</span>
+        <span class="n">dely</span> <span class="o">=</span> <span class="n">G_low</span><span class="o">.</span><span class="n">dely</span><span class="p">[</span><span class="n">G_low_ids</span><span class="p">]</span>
+        <span class="n">delz</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">delz</span>
+        <span class="n">G_overlap</span><span class="o">.</span><span class="n">set_delxyz</span><span class="p">((</span><span class="n">delx</span><span class="p">,</span> <span class="n">dely</span><span class="p">,</span> <span class="n">delz</span><span class="p">))</span>
+        <span class="c"># check if overlap region is identical</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">G_low_ids</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">G_high_ids</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Overlap length not identical, please check and try again!&quot;</span><span class="p">)</span>
+        <span class="c"># now: determine overlap mismatch</span>
+        <span class="n">G_overlap</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">G_low</span><span class="o">.</span><span class="n">grid</span><span class="p">[:,</span><span class="n">G_low_ids</span><span class="p">,:]</span> <span class="o">-</span> <span class="n">G_high</span><span class="o">.</span><span class="n">grid</span><span class="p">[:,</span><span class="n">G_high_ids</span><span class="p">,:]</span>
+        <span class="c"># for some very strange reason, this next step is necessary to enable the VTK</span>
+        <span class="c"># export with pyevtk - looks like a bug in pyevtk...</span>
+        <span class="n">G_overlap</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">G_overlap</span><span class="o">.</span><span class="n">grid</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">G_overlap</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="c">#</span>
+        
+        <span class="c">#=======================================================================</span>
+        <span class="c"># Set up combined grid</span>
+        <span class="c">#=======================================================================</span>
+        
+        <span class="n">G_comb</span><span class="o">.</span><span class="n">set_dimensions</span><span class="p">(</span><span class="n">dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="n">G_low</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">G_high</span><span class="o">.</span><span class="n">ymax</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">zmax</span><span class="p">))</span>
+        <span class="c"># combine dely arrays</span>
+        <span class="n">dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">G_low</span><span class="o">.</span><span class="n">dely</span><span class="p">[:</span><span class="n">G_low_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">G_high</span><span class="o">.</span><span class="n">dely</span><span class="p">))</span>
+        <span class="n">G_comb</span><span class="o">.</span><span class="n">set_delxyz</span><span class="p">((</span><span class="n">delx</span><span class="p">,</span> <span class="n">dely</span><span class="p">,</span> <span class="n">delz</span><span class="p">))</span>        
+        
+        <span class="c">#=======================================================================</span>
+        <span class="c"># Now merge grids</span>
+        <span class="c">#=======================================================================</span>
+        <span class="k">if</span> <span class="n">merge_type</span> <span class="o">==</span> <span class="s">&#39;keep_first&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">G1</span><span class="o">.</span><span class="n">ymax</span> <span class="o">&gt;</span> <span class="n">G2</span><span class="o">.</span><span class="n">ymax</span><span class="p">:</span>
+                <span class="n">G_comb</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">G2</span><span class="o">.</span><span class="n">grid</span><span class="p">[:,:</span><span class="n">G_low_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">],:],</span> <span class="n">G1</span><span class="o">.</span><span class="n">grid</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">G_comb</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">G1</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span> <span class="n">G2</span><span class="o">.</span><span class="n">grid</span><span class="p">[:,:</span><span class="n">G_low_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">],:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="k">elif</span> <span class="n">merge_type</span> <span class="o">==</span> <span class="s">&#39;keep_second&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">merge_type</span> <span class="o">==</span> <span class="s">&#39;random&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Merge type </span><span class="si">%s</span><span class="s"> not recognised! Please check and try again!&quot;</span> <span class="o">%</span> <span class="n">merge_type</span><span class="p">)</span>
+        
+    <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s">&#39;z&#39;</span><span class="p">:</span>
+        <span class="k">pass</span>
+      
+    
+      
+    
+    <span class="c"># Return combined grid and results of overlap analysis, if determined  </span>
+    <span class="k">if</span> <span class="n">overlap_analysis</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">G_comb</span><span class="p">,</span> <span class="n">G_overlap</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">G_comb</span>
+    </div>
+<div class="viewcode-block" id="optimial_cell_increase"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geogrid.optimial_cell_increase">[docs]</a><span class="k">def</span> <span class="nf">optimial_cell_increase</span><span class="p">(</span><span class="n">starting_cell_width</span><span class="p">,</span> <span class="n">n_cells</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Determine an array with optimal cell width for a defined starting cell width,</span>
+<span class="sd">    total number of cells, and total width</span>
+
+<span class="sd">    Basically, this function optimised a factor between two cells to obtain a total</span>
+<span class="sd">    width</span>
+
+<span class="sd">    **Arguments**:</span>
+<span class="sd">    	- *starting_cell_width* = float : width of starting/ inner cell</span>
+<span class="sd">	- *n_cells* = int : total number of cells</span>
+<span class="sd">	- *total_width* = float : total width (sum over all elements in array)</span>
+
+<span class="sd">    **Returns**:</span>
+<span class="sd">        del_array : numpy.ndarray with cell discretisations</span>
+<span class="sd">    </span>
+<span class="sd">    Note: optmisation with scipy.optimize - better (analytical?) methods might exist but</span>
+<span class="sd">    I can&#39;t think of them at the moment</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">scipy.optimize</span>
+    <span class="c"># define some helper functions</span>
+    
+    <span class="k">def</span> <span class="nf">width_sum</span><span class="p">(</span><span class="n">inc_factor</span><span class="p">,</span> <span class="n">inner_cell</span><span class="p">,</span> <span class="n">n_cells</span><span class="p">,</span> <span class="n">total_width</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">del_array</span><span class="p">(</span><span class="n">inc_factor</span><span class="p">,</span> <span class="n">inner_cell</span><span class="p">,</span> <span class="n">n_cells</span><span class="p">))</span> <span class="o">-</span> <span class="n">total_width</span>
+
+    <span class="k">def</span> <span class="nf">del_array</span><span class="p">(</span><span class="n">inc_factor</span><span class="p">,</span> <span class="n">inner_cell</span><span class="p">,</span> <span class="n">n_cells</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">inner_cell</span> <span class="o">*</span> <span class="n">inc_factor</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_cells</span><span class="p">)])</span>
+
+    <span class="c"># now the actual optimisation step:</span>
+    <span class="n">opti_factor</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">fsolve</span><span class="p">(</span><span class="n">width_sum</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="p">(</span><span class="n">starting_cell_width</span><span class="p">,</span> <span class="n">n_cells</span><span class="p">,</span> <span class="n">width</span><span class="p">))</span>
+    
+    <span class="c"># return the discretisation array</span>
+    <span class="k">return</span> <span class="n">del_array</span><span class="p">(</span><span class="n">opti_factor</span><span class="p">,</span> <span class="n">starting_cell_width</span><span class="p">,</span> <span class="n">n_cells</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pygeomod 0.2 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Florian Wellmann.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

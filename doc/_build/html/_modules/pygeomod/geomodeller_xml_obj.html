@@ -1,0 +1,925 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pygeomod.geomodeller_xml_obj &mdash; pygeomod 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pygeomod 0.2 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pygeomod 0.2 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pygeomod.geomodeller_xml_obj</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Class definition for GeoModeller XML-Files</span>
+<span class="sd">This version includes drillholes</span>
+<span class="sd">Specific methods are defined for the uncertainty analysis (in combination</span>
+<span class="sd">with Uncertainty_Obj module)</span>
+
+<span class="sd">(c) J. Florian Wellmann, 2009-2013</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">elementtree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">etree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+<span class="c"># import Latex_output_5 as LO</span>
+<span class="kn">from</span> <span class="nn">pylab</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">string</span>
+
+<span class="c"># python module to wrap GeoModeller XML file and perform all kinds of data</span>
+<span class="c"># procedures, e.g.:</span>
+<span class="c"># - Stochastic data modeling</span>
+<span class="c"># - TWT to depth conversion</span>
+<span class="c"># - Documentation module</span>
+<span class="c">#</span>
+<span class="c"># To Do:</span>
+<span class="c"># - exception handling and passing</span>
+<span class="c"># - log file?</span>
+<span class="c"># - check validity of xml-code, test, if past-processing with sax neccessary?</span>
+<span class="c"># - implement auto-documentation</span>
+<span class="c"># - clear-up spaghetti code!!!!! Check dependencies and other modules</span>
+<span class="c">#    to get a consistent lay-out</span>
+
+<div class="viewcode-block" id="GeomodellerClass"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass">[docs]</a><span class="k">class</span> <span class="nc">GeomodellerClass</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper for GeoModeller XML-datafiles to perform all kinds of data</span>
+<span class="sd">    manipulation and analysis on low level basis, e.g.:</span>
+<span class="sd">    - Uncertainty Simulation</span>
+<span class="sd">    - TWT to depth conversion</span>
+<span class="sd">    - Data analysis, e.g. Auto-documentation&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Wrapper for GeoModeller XML-datafiles to perform all kinds of data</span>
+<span class="sd">    manipulation and analysis on low level basis, e.g.:</span>
+<span class="sd">    - Uncertainty Simulation</span>
+<span class="sd">    - TWT to depth conversion</span>
+<span class="sd">    - Data analysis, e.g. Auto-documentation&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="GeomodellerClass.load_geomodeller_file"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.load_geomodeller_file">[docs]</a>    <span class="k">def</span> <span class="nf">load_geomodeller_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xml_file</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xml_file_name</span> <span class="o">=</span> <span class="n">xml_file</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xml_file</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">,</span> <span class="p">(</span><span class="n">nr</span><span class="p">,</span> <span class="n">string_err</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;Can not open xml File &quot;</span> <span class="o">+</span> <span class="n">xml_file</span> <span class="o">+</span> <span class="s">&quot;: &quot;</span> <span class="o">+</span> <span class="n">string_err</span>
+            <span class="k">print</span> <span class="s">&quot;Please check file name and directory and try again&quot;</span>
+            <span class="k">raise</span> <span class="ne">IOError</span>
+        <span class="c"># safe tree on local varibale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span>
+        <span class="c"># get rootelement</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+        <span class="c"># set other class variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span> <span class="o">=</span> <span class="s">&quot;http://www.geomodeller.com/geo&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gml</span> <span class="o">=</span> <span class="s">&quot;http://www.opengis.net/gml&quot;</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.load_deepcopy_tree"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.load_deepcopy_tree">[docs]</a>    <span class="k">def</span> <span class="nf">load_deepcopy_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deepcopy_tree</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;load tree information from deepcopied tree into object&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">deepcopy_tree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span> <span class="o">=</span> <span class="n">deepcopy_tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+        <span class="c"># set other class variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span> <span class="o">=</span> <span class="s">&quot;http://www.geomodeller.com/geo&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gml</span> <span class="o">=</span> <span class="s">&quot;http://www.opengis.net/gml&quot;</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.deepcopy_tree"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.deepcopy_tree">[docs]</a>    <span class="k">def</span> <span class="nf">deepcopy_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;create a deep copy of original tree to restore later, e.g. for uncertainty evaluation&quot;&quot;&quot;</span>
+            
+        <span class="n">deepcopy_tree</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">)</span>
+        <span class="n">deepcopy_tree</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">deepcopy_tree</span>
+        
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.reload_geomodeller_file"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.reload_geomodeller_file">[docs]</a>    <span class="k">def</span> <span class="nf">reload_geomodeller_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deepcopy_tree</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;restore original tree root from deep copy of orignial tree</span>
+<span class="sd">        deep copy can be created (not automatically to save memory!) with</span>
+<span class="sd">        self.deepcopy_tree()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">deepcopy_tree</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;No deep copy of original tree available, please create with self.deepcopy_tree()&quot;</span>
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.get_sections"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_sections">[docs]</a>    <span class="k">def</span> <span class="nf">get_sections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get sections out of rootelement, safe array with section elements </span>
+<span class="sd">        in local variable&quot;&quot;&quot;</span>
+        <span class="n">sections_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Sections&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sections</span> <span class="o">=</span> <span class="n">sections_parent</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Section&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sections</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_faults"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_faults">[docs]</a>    <span class="k">def</span> <span class="nf">get_faults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get fault elements out of rootelement and safe as local list&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">faults_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Faults&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">faults</span> <span class="o">=</span> <span class="n">faults_parent</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Fault&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;No faults found in model&quot;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_formations"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_formations">[docs]</a>    <span class="k">def</span> <span class="nf">get_formations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get formation elements out of rootelement and safe as local list&quot;&quot;&quot;</span>
+        <span class="n">formations_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Formations&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">formations</span> <span class="o">=</span> <span class="n">formations_parent</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Formation&quot;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_stratigraphy_list"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_stratigraphy_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_stratigraphy_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get project stratigraphy and return as list; lowermost formation: 1</span>
+<span class="sd">        for GeoModeller dll access (this ist the formation number that is returned with</span>
+<span class="sd">        the GetComputedLithologyXYZ function in the geomodeller dll</span>
+<span class="sd">        optional keywords:</span>
+<span class="sd">        out = string : set &#39;out&#39; formation to this name (might be necessary for TOUGH2 simulation!)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">series_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">strati_column</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeologicalModel&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ProjectStratigraphicColumn&quot;</span><span class="p">)</span><span class="c">#.findall(&quot;{&quot;+self.xmlns+&quot;Series&quot;)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">strati_column</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Series&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Data&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">series_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">))</span>
+        <span class="c"># append &quot;out&quot; as uppermost formation for &quot;out values</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;out&#39;</span><span class="p">):</span>
+            <span class="n">series_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwds</span><span class="p">[</span><span class="s">&#39;out&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;out&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stratigraphy_list</span> <span class="o">=</span> <span class="n">series_list</span>
+        <span class="k">return</span> <span class="n">series_list</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_provenances"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_provenances">[docs]</a>    <span class="k">def</span> <span class="nf">get_provenances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get provenance table and return as dictionary with provenance rank as key</span>
+<span class="sd">        deprecated, use get_provenance_table() instead!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;deprecated, use get_provenance_table() instead!&quot;</span>
+        <span class="n">provenance_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ProvenanceTable&quot;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">provenance_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prov_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+            <span class="c">#check for leading and ending &#39;&quot;&#39; signs</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;&quot;&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prov_dict</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prov_dict</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.get_provenance_table"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_provenance_table">[docs]</a>    <span class="k">def</span> <span class="nf">get_provenance_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get provenance table and return as dictionary with provenance rank as key&quot;&quot;&quot;</span>
+        <span class="n">provenance_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ProvenanceTable&quot;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">provenance_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prov_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+            <span class="c">#check for leading and ending &#39;&quot;&#39; signs</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;&quot;&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prov_dict</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prov_dict</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.set_provenance_table"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.set_provenance_table">[docs]</a>    <span class="k">def</span> <span class="nf">set_provenance_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">provenance_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;create provenance table from dictionary; can be used to extend existing</span>
+<span class="sd">        provenance table as a first step to assign uncertainty values</span>
+<span class="sd">        attention: old provenance table is deleted!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">provenance_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ProvenanceTable&quot;</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">provenance_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+        <span class="c"># delete old provenance table</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="c"># define new table from provenance dictionary</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">provenance_dict</span><span class="p">:</span>
+            <span class="n">elem</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+            <span class="c"># turn list into string</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s">&#39;&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">procenance_dict</span><span class="p">[</span><span class="n">l</span><span class="p">])</span>
+            <span class="n">elem</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.get_provenance"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_provenance">[docs]</a>    <span class="k">def</span> <span class="nf">get_provenance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get provenance of an element, return as string</span>
+<span class="sd">        if not defined: returns None&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Provenance&quot;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.get_section_names"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_section_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_section_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get all section names out of local variable self.sections&quot;&quot;&quot;</span>
+        <span class="c"># todo: return section names as dictionary with element and name?</span>
+        <span class="c"># test if self.sections defined, if not -&gt; create</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sections</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c"># print &quot;Create sections Data array&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_sections</span><span class="p">()</span>
+        <span class="n">section_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sections</span><span class="p">:</span>
+            <span class="n">section_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">section</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">section_names</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_formation_names"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_formation_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_formation_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get formation names and return as list&quot;&quot;&quot;</span>
+        <span class="n">forms</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formations</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_formations</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">formation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">formations</span><span class="p">:</span>
+            <span class="n">forms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">forms</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.get_points_in_sections"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_points_in_sections">[docs]</a>    <span class="k">def</span> <span class="nf">get_points_in_sections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create dictionary of all points (with obs-id) in all sections&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_sections_dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">forms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_formation_point_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">section_dict</span><span class="p">[</span><span class="n">sec</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">forms</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;</span><span class="se">\t\t\t</span><span class="s">No Formation Points in this section&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">forms</span><span class="p">:</span>
+ 
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Data&quot;</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">ObsID = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;ObservationID&quot;</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\t</span><span class="s">Formation name</span><span class="se">\t</span><span class="s">= </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)</span>
+                    <span class="n">element_point</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}LineString&quot;</span><span class="p">)</span>
+                    <span class="n">element_coords</span> <span class="o">=</span> <span class="n">element_point</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}coordinates&quot;</span><span class="p">)</span>
+                    <span class="n">tmp</span> <span class="o">=</span> <span class="n">element_coords</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">tmp1</span> <span class="ow">in</span> <span class="n">tmp</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">tmp1</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="k">continue</span>
+                        <span class="n">tmp_cds</span> <span class="o">=</span> <span class="n">tmp1</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+                        <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">X = </span><span class="si">%.1f</span><span class="s">, Y = </span><span class="si">%.1f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">tmp_cds</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">tmp_cds</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+
+
+                    <span class="n">fol</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}FoliationObservation&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">fol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Foliation defined: azimuth = </span><span class="si">%.1f</span><span class="s">, dip = </span><span class="si">%.1f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Dip&quot;</span><span class="p">))))</span>
+                        <span class="c"># get position of foliation (yet another point)</span>
+                        <span class="n">pt</span> <span class="o">=</span> <span class="n">fol</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}Point&quot;</span><span class="p">)</span>
+                        <span class="n">c</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}coordinates&quot;</span><span class="p">)</span>
+                        <span class="n">cds</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+                        <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t\t</span><span class="s">X = </span><span class="si">%.1f</span><span class="s">, Y = </span><span class="si">%.1f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cds</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">cds</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+
+            <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+            <span class="k">print</span> <span class="mi">80</span><span class="o">*</span><span class="s">&quot;-&quot;</span>
+            <span class="k">print</span> <span class="s">&quot;Foliations in section </span><span class="si">%s</span><span class="s">:&quot;</span> <span class="o">%</span> <span class="n">sec</span>
+            <span class="k">print</span> <span class="mi">80</span><span class="o">*</span><span class="s">&quot;-&quot;</span>
+            <span class="n">foliations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_foliations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">section_dict</span><span class="p">[</span><span class="n">sec</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">foliations</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;</span><span class="se">\t\t\t</span><span class="s">No foliations in this section&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">fol1</span> <span class="ow">in</span> <span class="n">foliations</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">ObsID = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">fol1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;ObservationID&quot;</span><span class="p">)</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">fol1</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Data&quot;</span><span class="p">)</span>
+                    <span class="n">fol</span> <span class="o">=</span> <span class="n">fol1</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}FoliationObservation&quot;</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\t</span><span class="s">Formation name</span><span class="se">\t</span><span class="s">= </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Azimuth = </span><span class="si">%.1f</span><span class="s">, dip = </span><span class="si">%.1f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Dip&quot;</span><span class="p">))))</span>
+                    <span class="n">pt</span> <span class="o">=</span> <span class="n">fol</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}Point&quot;</span><span class="p">)</span>
+                    <span class="n">c</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}coordinates&quot;</span><span class="p">)</span>
+                    <span class="n">cds</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">X = </span><span class="si">%.1f</span><span class="s">, Y = </span><span class="si">%.1f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cds</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">cds</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_formation_parameters"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_formation_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">get_formation_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;read formation parameters; physical</span>
+<span class="sd">        properties, density, th. cond etc... store in dict&quot;&quot;&quot;</span>
+        <span class="c">#</span>
+        <span class="c"># To do: re-write in a more elegant way and keep original </span>
+        <span class="c"># structure and key-words?</span>
+        <span class="c"># </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formations</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+<span class="c">#            print &quot;Create sections Data array&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_formations</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">formation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">formations</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">geophys</span> <span class="o">=</span> <span class="n">formation</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Geophysics&quot;</span><span class="p">)</span>
+            <span class="n">dens</span> <span class="o">=</span> <span class="n">geophys</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}DensityCompoundDistribution&quot;</span><span class="p">)</span>
+            <span class="n">dens_simple</span> <span class="o">=</span> <span class="n">dens</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SimpleDistribution&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;dens_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dens_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Mean&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;dens_law&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dens_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;LawType&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;dens_dev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dens_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Deviation&quot;</span><span class="p">)</span>
+<span class="c">#             print geophys.getchildren()</span>
+            <span class="n">mag</span> <span class="o">=</span> <span class="n">geophys</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}RemanantMagnetizationCompoundDistribution&quot;</span><span class="p">)</span>
+            <span class="n">mag_simple</span> <span class="o">=</span> <span class="n">mag</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SimpleDistributionVector&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;mag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mag_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Mean&quot;</span><span class="p">)</span>
+            <span class="n">velocity</span> <span class="o">=</span> <span class="n">geophys</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}VelocityCompoundDistribution&quot;</span><span class="p">)</span>
+            <span class="n">velocity_simple</span> <span class="o">=</span> <span class="n">velocity</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SimpleDistribution&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;vel_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">velocity_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Mean&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;vel_law&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">velocity_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;LawType&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;vel_dev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">velocity_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Deviation&quot;</span><span class="p">)</span>
+            <span class="c"># Thermal properties are only defined in newer versions of GeoModeller! thus check!</span>
+            
+            <span class="n">th_cond</span> <span class="o">=</span> <span class="n">geophys</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ThermalConductivityCompoundDistribution&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">th_cond</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">th_cond_simple</span> <span class="o">=</span> <span class="n">th_cond</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SimpleDistribution&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;th_cond_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">th_cond_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Mean&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;th_cond_law&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">th_cond_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;LawType&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;th_cond_dev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">th_cond_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Deviation&quot;</span><span class="p">)</span>
+            <span class="n">heat_prod</span> <span class="o">=</span> <span class="n">geophys</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}HeatProductionRateCompoundDistribution&quot;</span><span class="p">)</span>
+            <span class="n">heat_prod_simple</span> <span class="o">=</span> <span class="n">heat_prod</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SimpleDistribution&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;heat_prod_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">heat_prod_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Mean&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;heat_prod_law&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">heat_prod_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;LawType&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_params</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)][</span><span class="s">&quot;heat_prod_dev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">heat_prod_simple</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Deviation&quot;</span><span class="p">)</span>
+    
+            <span class="c"># same for other properties</span>
+<span class="c">#            print th_cond</span>
+            <span class="c">#</span>
+            <span class="c"># !!! only simple distributions yet impl.</span>
+            <span class="c">#</span>
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.get_drillhole_elements"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_drillhole_elements">[docs]</a>    <span class="k">def</span> <span class="nf">get_drillhole_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get drillhole elements and store in dictionary&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">drillhole_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}DrillHoles&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeneralDrillholes&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Problem with drillhole element; check if drillholes are defined in project!&quot;</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drillholes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drillholes</span><span class="p">[</span><span class="s">&quot;geology&quot;</span><span class="p">]</span><span class="o">=</span> <span class="n">drillhole_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeologyTable&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drillholes</span><span class="p">[</span><span class="s">&quot;collar&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">drillhole_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}CollarTable&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drillholes</span><span class="p">[</span><span class="s">&quot;survey&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">drillhole_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SurveyTable&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span> 
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.get_drillholes_old"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_drillholes_old">[docs]</a>    <span class="k">def</span> <span class="nf">get_drillholes_old</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get drillhole tables as elements&quot;&quot;&quot;</span>
+        <span class="n">drillhole_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}DrillHoles&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeneralDrillholes&quot;</span><span class="p">)</span>
+        <span class="n">ct</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">gt</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">ct</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">drillhole_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}CollarTable&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">drillhole_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SurveyTable&quot;</span><span class="p">)</span>        
+        <span class="n">gt</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">drillhole_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeologyTable&quot;</span><span class="p">)</span>
+        <span class="n">ct</span><span class="p">[</span><span class="s">&quot;head&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ct</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Head&quot;</span><span class="p">)</span>
+        <span class="n">ct</span><span class="p">[</span><span class="s">&quot;result&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ct</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>        
+        <span class="n">st</span><span class="p">[</span><span class="s">&quot;head&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Head&quot;</span><span class="p">)</span>
+        <span class="n">st</span><span class="p">[</span><span class="s">&quot;result&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>        
+        <span class="n">gt</span><span class="p">[</span><span class="s">&quot;head&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gt</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Head&quot;</span><span class="p">)</span>
+        <span class="n">gt</span><span class="p">[</span><span class="s">&quot;result&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gt</span><span class="p">[</span><span class="s">&quot;parent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>       
+        <span class="c"># print ct</span>
+        <span class="c"># set as global arguments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collar</span> <span class="o">=</span> <span class="n">ct</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">geology</span> <span class="o">=</span> <span class="n">gt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">survey</span> <span class="o">=</span> <span class="n">st</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.append_drillhole_data"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.append_drillhole_data">[docs]</a>    <span class="k">def</span> <span class="nf">append_drillhole_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">data_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;append data in list as drillhole data (i.e. new Row elements); </span>
+<span class="sd">        element should</span>
+<span class="sd">        be one of the drillhole file elements, i.e. </span>
+<span class="sd">        self.drillholes[&quot;survey&quot;], self.drillholes[&quot;collar&quot;] </span>
+<span class="sd">        or self.drillholes[&quot;geology&quot;] </span>
+<span class="sd">        list should be on correct format&quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>
+        <span class="c"># rows = results.findall(&quot;{&quot;+self.xmlns+&quot;}Row&quot;)</span>
+        <span class="c"># data = []</span>
+        <span class="n">elem</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s">&quot;Row&quot;</span><span class="p">)</span>
+        <span class="c"># turn list into string</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">text</span> <span class="o">+</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">, &#39;</span> <span class="o">%</span> <span class="n">l</span>
+        <span class="c"># delete last comma delimiter</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">elem</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.delete_drillhole_data"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.delete_drillhole_data">[docs]</a>    <span class="k">def</span> <span class="nf">delete_drillhole_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;delete all drillhole data of an element (i.e. delete</span>
+<span class="sd">        all Row elements; element should be one of</span>
+<span class="sd">        self.drillholes[&quot;survey&quot;], self.drillholes[&quot;collar&quot;] </span>
+<span class="sd">        or self.drillholes[&quot;geology&quot;] </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.set_drillhole_data"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.set_drillhole_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_drillhole_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">data_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set data in list as drillhole data (i.e. delete all</span>
+<span class="sd">        existing Row elements and create new ones); </span>
+<span class="sd">        element should</span>
+<span class="sd">        be one of the drillhole file elements, i.e. </span>
+<span class="sd">        self.drillholes[&quot;survey&quot;], self.drillholes[&quot;collar&quot;] </span>
+<span class="sd">        or self.drillholes[&quot;geology&quot;] </span>
+<span class="sd">        list should be on correct format&quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="c"># data = []</span>
+        <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeologyTable&quot;</span><span class="p">:</span> 
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+                <span class="n">elem</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+                <span class="c"># turn list into string</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="s">&#39;&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}CollarTable&quot;</span><span class="p">:</span> 
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+                <span class="n">elem</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+                <span class="c"># turn list into string</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="s">&#39;&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SurveyTable&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+                <span class="n">elem</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+                <span class="c"># turn list into string</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="s">&#39;&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">l</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">elem</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.get_drillhole_data"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_drillhole_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_drillhole_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get drillhole data from result element as list</span>
+<span class="sd">        element should be one of the drillhole file elements, i.e.</span>
+<span class="sd">        self.drillholes[&quot;survey&quot;], self.drillholes[&quot;collar&quot;] </span>
+<span class="sd">        or self.drillholes[&quot;geology&quot;] </span>
+<span class="sd">        also performs some type conversion, etc. based on type</span>
+<span class="sd">        of element (e.g. in GeologyTable: set from and to as float values!)</span>
+<span class="sd">        and removes leading and tailing &#39;&quot;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Result&quot;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Row&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+            <span class="c"># now, some conversion and formatting issues:</span>
+            <span class="c"># remove &quot; &quot; around entries</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">r</span><span class="p">):</span>
+                <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="c"># set 1,2 to float for geology table</span>
+                <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}GeologyTable&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="c"># set col 1,2,3 to float for survey table</span>
+                <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}SurveyTable&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="c"># set col 1,2,3,4 to float for collar table</span>
+                <span class="c"># check: set x,y,z as int???</span>
+                <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}CollarTable&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                        <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>                
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+    
+<span class="c">#    def set_drillhole_data(self, element, l):</span>
+<span class="c">#        &quot;&quot;&quot;set drillhole data for element from list</span>
+<span class="c">#        element should be one of the drillhole file elements, i.e.</span>
+<span class="c">#        self.drillholes[&quot;survey&quot;], self.drillholes[&quot;collar&quot;] </span>
+<span class="c">#        or self.drillholes[&quot;geology&quot;] &quot;&quot;&quot;</span>
+<span class="c">#        return True</span>
+<span class="c">#     </span></div>
+<div class="viewcode-block" id="GeomodellerClass.create_fault_dict"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.create_fault_dict">[docs]</a>    <span class="k">def</span> <span class="nf">create_fault_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;create dictionary for fault elements with names as keys&quot;&quot;&quot;</span>
+        <span class="c"># test if self.formations defined, if not -&gt; create</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">faults</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Create Formations list&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_faults</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fault_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fault_dict</span><span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">fault</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault_dict</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.create_formation_dict"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.create_formation_dict">[docs]</a>    <span class="k">def</span> <span class="nf">create_formation_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;create dictionary for formation elements with formation names as keys&quot;&quot;&quot;</span>
+        <span class="c"># test if self.formations defined, if not -&gt; create</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formations</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Create formation dictionary&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_formations</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">formation_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">formation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">formations</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_dict</span><span class="p">[</span><span class="n">formation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">formation</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">formation_dict</span>
+          </div>
+<div class="viewcode-block" id="GeomodellerClass.create_sections_dict"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.create_sections_dict">[docs]</a>    <span class="k">def</span> <span class="nf">create_sections_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;create dictionary for section elements with section names as keys</span>
+<span class="sd">        (for easier use...)&quot;&quot;&quot;</span>
+        <span class="c"># test if self.sections defined, if not -&gt; create</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sections</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c"># print &quot;Create sections dictionary&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_sections</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sections</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">section_dict</span><span class="p">[</span><span class="n">section</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">section</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">section_dict</span>
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.get_fault_parameters"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_fault_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">get_fault_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get fault parameters out of &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_foliations"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_foliations">[docs]</a>    <span class="k">def</span> <span class="nf">get_foliations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get all foliation data elements from a for section&quot;&quot;&quot;</span>
+        <span class="n">tmp_element</span> <span class="o">=</span> <span class="n">section_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Structural2DData&quot;</span><span class="p">)</span>
+        <span class="c"># check in case there is no foliation defined in this section</span>
+        <span class="c"># tmp_element2 = tmp_element.find(&quot;{&quot;+self.xmlns+&quot;}Foliations&quot;)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tmp_element2</span> <span class="o">=</span> <span class="n">tmp_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Foliations&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">foliations</span> <span class="o">=</span> <span class="n">tmp_element2</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Foliation&quot;</span><span class="p">)</span> 
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">foliations</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_foliation_dip"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_foliation_dip">[docs]</a>    <span class="k">def</span> <span class="nf">get_foliation_dip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foliation_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get dip of foliation element&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">foliation_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}FoliationObservation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Dip&quot;</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.get_foliation_azimuth"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_foliation_azimuth">[docs]</a>    <span class="k">def</span> <span class="nf">get_foliation_azimuth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foliation_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get dip of foliation element&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">foliation_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}FoliationObservation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">))</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_folation_polarity"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_folation_polarity">[docs]</a>    <span class="k">def</span> <span class="nf">get_folation_polarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foliation_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get polarity of foliation element; return true if Normal Polarity&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">foliation_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}FoliationObservation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;NormalPolarity&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.get_formation_data"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_formation_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_formation_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;not used any more! use get_formation_point_data(section_element) instead&quot;&quot;&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;not used any more! use get_formation_point_data(section_element) instead&quot;</span>
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.get_formation_point_data"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_formation_point_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_formation_point_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get all formation point data elements from a for section&quot;&quot;&quot;</span>
+        <span class="n">tmp_element</span> <span class="o">=</span> <span class="n">section_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Structural2DData&quot;</span><span class="p">)</span>
+        <span class="c"># check in case there is no formation points defined in this section</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tmp_element2</span> <span class="o">=</span> <span class="n">tmp_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Interfaces&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">tmp_element2</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Interface&quot;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_name"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get the name of any section element (if defined)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">section_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Name&quot;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.get_interface_name"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_interface_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get name of interface, i.e. the formation&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">interface_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Data&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.change_formation_point_pos"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.change_formation_point_pos">[docs]</a>    <span class="k">def</span> <span class="nf">change_formation_point_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;change position of formation point in section element</span>
+<span class="sd">        arguments:</span>
+<span class="sd">        x_coord, y_coord : set to this coordinates</span>
+<span class="sd">        add_x_coord, add_y_coord : add values to existing coordinates</span>
+<span class="sd">        use if_name = and if_provenance = to add conditions!&quot;&quot;&quot;</span>
+        <span class="n">prov</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Provenance&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Data&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;if_name&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;if_name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;if_provenance&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;if_provenance&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">prov</span><span class="p">:</span> <span class="k">return</span>
+        <span class="c"># element_fol = element.find(&quot;{&quot;+self.xmlns+&quot;}&quot;)</span>
+        <span class="n">element_point</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}LineString&quot;</span><span class="p">)</span>
+        <span class="n">element_coords</span> <span class="o">=</span> <span class="n">element_point</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}coordinates&quot;</span><span class="p">)</span>
+        <span class="n">point_list</span> <span class="o">=</span> <span class="n">element_coords</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">point_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">point_list</span> <span class="o">=</span> <span class="n">point_list</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">point_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">x_coords</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">y_coords</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">print</span> <span class="n">point_list</span>
+            <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">point_list</span><span class="p">:</span>
+                <span class="c"># if point == &#39;&#39;: continue</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+                <span class="p">[</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">x_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_coord</span><span class="p">)</span>
+                <span class="n">y_coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_coord</span><span class="p">)</span>
+            <span class="c"># convert to arrays for calculation</span>
+            <span class="n">x_coords</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">x_coords</span><span class="p">)</span>
+            <span class="n">y_coords</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">y_coords</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_x_coord&quot;</span><span class="p">):</span>
+                <span class="n">x_coords</span> <span class="o">=</span> <span class="n">x_coords</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_x_coord&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_y_coord&quot;</span><span class="p">):</span>
+                <span class="n">y_coords</span> <span class="o">=</span> <span class="n">y_coords</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_y_coord&quot;</span><span class="p">])</span>
+            <span class="c"># now, reconstruct output format strings</span>
+            <span class="n">out_text</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">x_coord</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x_coords</span><span class="p">):</span>
+                <span class="n">out_text</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%f</span><span class="s">,</span><span class="si">%f</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x_coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">y_coords</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>                
+            <span class="n">element_coords</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">out_text</span>               
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">]</span> <span class="o">=</span> <span class="n">point_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+            <span class="p">[</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x_coord</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">y_coord</span><span class="p">)]</span>            
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;x_coord&quot;</span><span class="p">):</span>
+                <span class="n">x_coord</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;x_coord&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;y_coord&quot;</span><span class="p">):</span>
+                <span class="n">y_coord</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;y_coord&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_x_coord&quot;</span><span class="p">):</span>
+                <span class="n">x_coord</span> <span class="o">=</span> <span class="n">x_coord</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_x_coord&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_y_coord&quot;</span><span class="p">):</span>
+                <span class="n">y_coord</span> <span class="o">=</span> <span class="n">y_coord</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_y_coord&quot;</span><span class="p">])</span>
+            <span class="n">element_coords</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%f</span><span class="s">,</span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="GeomodellerClass.change_foliation_polarity"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.change_foliation_polarity">[docs]</a>    <span class="k">def</span> <span class="nf">change_foliation_polarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;change polarity of foliation element&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;NormalPolarity&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&quot;true&quot;</span><span class="p">:</span>
+            <span class="n">element</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;NormalPolarity&quot;</span><span class="p">,</span> <span class="s">&quot;false&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">element</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;NormalPolarity&quot;</span><span class="p">,</span> <span class="s">&quot;true&quot;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.change_foliation"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.change_foliation">[docs]</a>    <span class="k">def</span> <span class="nf">change_foliation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;change foliation data, argument one or more of: azimuth, dip, </span>
+<span class="sd">        normalpolarity = true/false, x_coord, y_coord&quot; or: add_dip, add_azimuth,</span>
+<span class="sd">        add_x_coord, add_y_coord to add values to existing values!</span>
+<span class="sd">        use if_name = and if_provenance = to add conditions!&quot;&quot;&quot;</span>
+        <span class="n">prov</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Provenance&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Data&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;if_name&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;if_name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">name</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;if_provenance&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;if_provenance&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">prov</span><span class="p">:</span> <span class="k">return</span>
+        <span class="n">element_fol</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}FoliationObservation&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;dip&quot;</span><span class="p">):</span>
+            <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Dip&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;dip&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;azimuth&quot;</span><span class="p">):</span>
+            <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;azimuth&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;nomalpolarity&quot;</span><span class="p">):</span>
+            <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;NormalPolarity&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;normalpolarity&quot;</span><span class="p">])</span>
+        <span class="c">#</span>
+        <span class="c"># To Do: logfile, if dip &gt;90, azi &gt; 360, ...</span>
+        <span class="c">#</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_dip&quot;</span><span class="p">):</span>
+            <span class="n">dip_org</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">element_fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Dip&quot;</span><span class="p">))</span>
+            <span class="n">dip_new</span> <span class="o">=</span> <span class="n">dip_org</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_dip&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">dip_new</span> <span class="o">&gt;</span> <span class="mi">90</span><span class="p">:</span>
+                <span class="n">dip_new</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">dip_new</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">change_foliation_polarity</span><span class="p">(</span><span class="n">element_fol</span><span class="p">)</span>
+                <span class="n">azi_org</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">element_fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">azi_org</span> <span class="o">&lt;</span> <span class="mi">180</span><span class="p">:</span>
+                    <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">azi_org</span><span class="o">+</span><span class="mi">180</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">azi_org</span><span class="o">-</span><span class="mi">180</span><span class="p">))</span>
+            <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Dip&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">dip_new</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_azimuth&quot;</span><span class="p">):</span>
+            <span class="n">azi_org</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">element_fol</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">))</span>
+            <span class="n">azi_new</span> <span class="o">=</span> <span class="n">azi_org</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_azimuth&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">azi_new</span> <span class="o">&gt;</span> <span class="mf">360.0</span><span class="p">:</span> <span class="n">azi_new</span> <span class="o">-=</span> <span class="mi">360</span>
+            <span class="n">element_fol</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Azimuth&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">azi_new</span><span class="p">))</span>
+        <span class="n">element_point</span> <span class="o">=</span> <span class="n">element_fol</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}Point&quot;</span><span class="p">)</span>
+        <span class="n">element_coords</span> <span class="o">=</span> <span class="n">element_point</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}coordinates&quot;</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">]</span> <span class="o">=</span> <span class="n">element_coords</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x_coord</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">y_coord</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;x_coord&quot;</span><span class="p">):</span>
+            <span class="n">x_coord</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;x_coord&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;y_coord&quot;</span><span class="p">):</span>
+            <span class="n">y_coord</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;y_coord&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_x_coord&quot;</span><span class="p">):</span>
+            <span class="n">x_coord</span> <span class="o">=</span> <span class="n">x_coord</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_x_coord&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;add_y_coord&quot;</span><span class="p">):</span>
+            <span class="n">y_coord</span> <span class="o">=</span> <span class="n">y_coord</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&quot;add_y_coord&quot;</span><span class="p">])</span>
+        <span class="n">element_coords</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%f</span><span class="s">,</span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.twt_to_depth"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.twt_to_depth">[docs]</a>    <span class="k">def</span> <span class="nf">twt_to_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sec_element</span><span class="p">,</span> <span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert all data within a section from twt to depth (including</span>
+<span class="sd">        orientation data!!</span>
+<span class="sd">        Input: section element with data points, conversion function as</span>
+<span class="sd">        string with &#39;t&#39; as placeholder for twt-time, e.g. &#39;2 * (-t) ** 2 + 18 * (-t)&#39;</span>
+<span class="sd">        ATTENTION: check if t negative</span>
+<span class="sd">        optional arguments: </span>
+<span class="sd">        change_dip (boolean) : change dip angle in foliation data</span>
+<span class="sd">        according to first derivative of twt-to-depth formula</span>
+<span class="sd">        create_plot (boolean) : create summary plot with twt and converted depth</span>
+<span class="sd">        for conversion formula control</span>
+<span class="sd">        &quot;&quot;&quot;</span>            
+        <span class="c"># Idea: stoachstic apporach to twt -&gt; depth conversion: apply several</span>
+        <span class="c"># possible formulae for quality estimation of resulting model?</span>
+        <span class="n">struct_data</span> <span class="o">=</span> <span class="n">sec_element</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Structural2DData&quot;</span><span class="p">)</span>
+        <span class="n">interfaces</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Interfaces&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Interface&quot;</span><span class="p">)</span>
+        <span class="c"># save data in list to create a plot to check validity of conversion</span>
+        <span class="n">t_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">v_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">interface</span> <span class="ow">in</span> <span class="n">interfaces</span><span class="p">:</span>
+            <span class="n">gml_coords_element</span> <span class="o">=</span> <span class="n">interface</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}LineString&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">gml</span><span class="o">+</span><span class="s">&quot;}coordinates&quot;</span><span class="p">)</span>
+            <span class="c"># check for correct decimal, column (cs) and text separator (ts)</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">gml_coords_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;ts&quot;</span><span class="p">)</span>
+            <span class="n">cs</span> <span class="o">=</span> <span class="n">gml_coords_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;cs&quot;</span><span class="p">)</span>
+            <span class="n">data_array</span> <span class="o">=</span> <span class="n">gml_coords_element</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+            <span class="c"># check if last entry is empty (seems to happen often), if so: delete!</span>
+            <span class="c"># print gml_coords_element.text</span>
+            <span class="k">if</span> <span class="n">data_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span> <span class="k">del</span> <span class="n">data_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">text_new</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="c"># apply conversion formula for z-direction, i.e. dv;</span>
+            <span class="c"># no change in x-direction -&gt; du = 0 (but: maybe neccessary for specific situations?)</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">data_array</span><span class="p">:</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+                <span class="c"># get original values</span>
+                <span class="c"># t as varibale, as defined in formula (input)</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">v_new</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">formula</span><span class="p">)</span>
+                <span class="n">du</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">text_new</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%f%s%f%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="n">du</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">v_new</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                <span class="c"># append to list for check-plot</span>
+                <span class="n">t_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">t</span><span class="p">)</span>
+                <span class="n">v_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_new</span><span class="p">)</span>
+            <span class="c"># print text_new                                                            </span>
+            <span class="n">gml_coords_element</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text_new</span>
+            <span class="c"># print gml_coords_element.text</span>
+        <span class="c"># now change foliation position and dip angle! (check: given as argument?)</span>
+        <span class="c"># for dip angle: numerical determination of first derivative for</span>
+        <span class="c"># twt to depth conversion formula?    </span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;change_dip&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;change_dip&quot;</span><span class="p">]:</span>
+            <span class="k">print</span> <span class="s">&quot;change dip in seismic profile&quot;</span>
+        
+        <span class="c"># create check-plot</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;create_plot&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">args</span><span class="p">[</span><span class="s">&quot;create_plot&quot;</span><span class="p">]:</span>
+            <span class="k">print</span> <span class="s">&quot;Create plot with twt, converted depth pairs&quot;</span>            
+            <span class="n">plot</span><span class="p">(</span><span class="n">t_list</span><span class="p">,</span><span class="n">v_list</span><span class="p">,</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="n">formula</span><span class="p">)</span>
+            <span class="n">title</span><span class="p">(</span><span class="s">&quot;TWT to depth: Converted data points</span><span class="se">\n</span><span class="s">Section: &quot;</span> <span class="o">+</span> <span class="n">sec_element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">))</span>
+            <span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;TWT [ms]&quot;</span><span class="p">)</span>
+            <span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;Converted depth [m]&quot;</span><span class="p">)</span>
+            <span class="n">legend</span><span class="p">()</span>
+            <span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">show</span><span class="p">()</span>
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.get_pole_points"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_pole_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_pole_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="c"># function to plot data points in geomodeller element</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">poles</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">getiterator</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Pole-Weight&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pole</span> <span class="ow">in</span> <span class="n">poles</span><span class="p">:</span>
+            <span class="n">u</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pole</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;U&quot;</span><span class="p">))</span>
+            <span class="n">v</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pole</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;V&quot;</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.plot_points"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.plot_points">[docs]</a>    <span class="k">def</span> <span class="nf">plot_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="c"># plot u,v points in simple 2D plot</span>
+        <span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pole_points</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="s">&#39;o&#39;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">)</span>
+        <span class="n">title</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">savefig</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&quot;_points.png&quot;</span><span class="p">)</span>
+            </div>
+<div class="viewcode-block" id="GeomodellerClass.write_xml"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.write_xml">[docs]</a>    <span class="k">def</span> <span class="nf">write_xml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write elementtree to xml-file&quot;&quot;&quot;</span> 
+        <span class="c"># to do: filename (and directory?) as optional argument&quot;&quot;&quot;</span>
+        <span class="c"># flo, 10/2008</span>
+        <span class="c">#file = &quot;changed_model.xml&quot;</span>
+        <span class="n">tree_new</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">ElementTree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Write tree to file &quot;</span> <span class="o">+</span> <span class="n">save_dir</span>
+        <span class="n">tree_new</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+        <span class="c">#self.tree.write(&quot;changed_model.xml&quot;)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+     </div>
+<div class="viewcode-block" id="GeomodellerClass.add_to_project_name"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.add_to_project_name">[docs]</a>    <span class="k">def</span> <span class="nf">add_to_project_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add string s to project name, e.g. Number of uncertainty run&quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;projectName&quot;</span><span class="p">)</span>
+        <span class="n">name_new</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="n">s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;projectName&quot;</span><span class="p">,</span><span class="n">name_new</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.get_model_extent"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_model_extent">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_extent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get extent of model</span>
+<span class="sd">        returns (x_min, x_max, y_min, y_max, z_min, z_max)</span>
+<span class="sd">        and saves extent in self.x_min, self.x_max, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">extent_parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rootelement</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Extent3DOfProject&quot;</span><span class="p">)</span>
+        <span class="n">extentbox3D</span> <span class="o">=</span> <span class="n">extent_parent</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ExtentBox3D&quot;</span><span class="p">)</span>
+        <span class="n">extent3D</span> <span class="o">=</span> <span class="n">extentbox3D</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}Extent3D&quot;</span><span class="p">)</span>
+        <span class="n">extent_xy</span> <span class="o">=</span> <span class="n">extent3D</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ExtentXY&quot;</span><span class="p">)</span>
+        <span class="n">extent_z</span> <span class="o">=</span> <span class="n">extent3D</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;{&quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">xmlns</span><span class="o">+</span><span class="s">&quot;}ExtentZ&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extent_xy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Xmin&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extent_xy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Xmax&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extent_xy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Ymin&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extent_xy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Ymax&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extent_z</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Zmin&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extent_z</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Zmax&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_max</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="GeomodellerClass.get_model_range"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.get_model_range">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get model range from model extent, e.g. for automatic mesh generation&quot;&quot;&quot;</span>
+        <span class="p">(</span><span class="n">x_min</span><span class="p">,</span> <span class="n">x_max</span><span class="p">,</span> <span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span><span class="p">,</span> <span class="n">z_min</span><span class="p">,</span> <span class="n">z_max</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_extent</span><span class="p">()</span>
+        <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="nb">abs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">range_x</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x_max</span> <span class="o">-</span> <span class="n">x_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">range_y</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y_max</span> <span class="o">-</span> <span class="n">y_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">range_z</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">z_max</span> <span class="o">-</span> <span class="n">z_min</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">range_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_z</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="GeomodellerClass.create_TOUGH_formation_names"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.geomodeller_xml_obj.GeomodellerClass.create_TOUGH_formation_names">[docs]</a>    <span class="k">def</span> <span class="nf">create_TOUGH_formation_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;create formation names that are compatible with format required by TOUGH,</span>
+<span class="sd">        i.e. String of length 5</span>
+<span class="sd">        returns and stores as dictionary with Geomodeller Names as key and TOUGH names as entry</span>
+<span class="sd">        (self.tough_formation_names)</span>
+<span class="sd">        simply cuts original formation name to a name length of 5;</span>
+<span class="sd">        if cut name already exists: create new name, three first string values followed by two integers</span>
+<span class="sd">        that are subsequently increased</span>
+<span class="sd">        optional keywods:</span>
+<span class="sd">        out = string : set out formation to this name (for TOUGH2: no leading spaces allowed! set to 5 chars!)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># import str</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tough_formation_names</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># check if self.formation_names list already exists, if not: create</span>
+        <span class="k">try</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">formation_names</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">formation_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stratigraphy_list</span><span class="p">(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="c"># create list with tough names to check if name already exists</span>
+        <span class="n">tough_name_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">formation_names</span><span class="p">):</span>
+<span class="c">#            if self.formation_names[i] == &#39;  out&#39; or self.formation_names[i] == &#39;  OUT&#39;:</span>
+<span class="c">#                tough_name_list.append(&quot;OUT  &quot;)</span>
+<span class="c">#                continue</span>
+            <span class="n">cut_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formation_names</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">cut_name</span> <span class="ow">in</span> <span class="n">tough_name_list</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="s">&quot;</span><span class="si">%3s%02d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cut_name</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span><span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tough_name_list</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span> 
+                        <span class="n">cut_name</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%3s%02d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cut_name</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span><span class="n">j</span><span class="p">)</span>
+                        <span class="n">tough_name_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cut_name</span><span class="p">)</span>
+                        <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tough_name_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cut_name</span><span class="p">)</span>        
+            <span class="bp">self</span><span class="o">.</span><span class="n">tough_formation_names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%5s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">cut_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tough_formation_names</span>
+    
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;main&quot;</span>   
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pygeomod 0.2 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Florian Wellmann.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

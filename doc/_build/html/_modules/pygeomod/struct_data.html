@@ -1,0 +1,559 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pygeomod.struct_data &mdash; pygeomod 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pygeomod 0.2 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pygeomod 0.2 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pygeomod.struct_data</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Analysis and modification of structural data exported from GeoModeller</span>
+
+<span class="sd">All structural data from an entire GeoModeller project can be exported into ASCII</span>
+<span class="sd">files using the function in the GUI:</span>
+
+<span class="sd">Export -&gt; 3D Structural Data</span>
+
+<span class="sd">This method generates files for defined geological parameters:</span>
+<span class="sd">&quot;Points&quot; (i.e. formation contact points) and</span>
+<span class="sd">&quot;Foliations&quot; (i.e. orientations/ potential field gradients). </span>
+
+<span class="sd">Exported parameters include all those defined in sections as well as 3D data points.</span>
+
+<span class="sd">This package contains methods to check, visualise, and extract/modify parts of these</span>
+<span class="sd">exported data sets, for example to import them into a different Geomodeller project.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c"># import os, sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.random</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="c"># from mpl_toolkits.mplot3d import Axes3D</span>
+
+<div class="viewcode-block" id="Struct3DPoints"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints">[docs]</a><span class="k">class</span> <span class="nc">Struct3DPoints</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Class container for 3D structural points data sets&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Structural points data set</span>
+<span class="sd">        </span>
+<span class="sd">        **Optional keywords**:</span>
+<span class="sd">            - *filename* = string : filename of csv file with exported points to load</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># store point information in purpose defined numpy record</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ptype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;z&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;formation&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">,</span> <span class="mi">32</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;filename&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span>
+            <span class="c"># read data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+            
+<div class="viewcode-block" id="Struct3DPoints.parse"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse filename and load data into numpy record</span>
+<span class="sd">        </span>
+<span class="sd">        The point information is stored in a purpose defined numpy record</span>
+<span class="sd">        self.points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># determine position of elements in header (for extension to foliations, etc.)</span>
+        <span class="n">h_elem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+        <span class="n">x_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;X&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">y_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;Y&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">z_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;Z&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">form_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;formation&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># print x_id</span>
+        <span class="c"># create numpy array for points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ptype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">x_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">y_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">z_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="n">form_id</span><span class="p">]</span>
+    </div>
+<div class="viewcode-block" id="Struct3DPoints.get_formation_names"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.get_formation_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_formation_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get names of all formations that have a point in this data set</span>
+<span class="sd">        and store in:</span>
+<span class="sd">        </span>
+<span class="sd">        self.formation_names</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c">#        self.formation_names = np.unique(self.formations)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">formation_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[:][</span><span class="s">&#39;formation&#39;</span><span class="p">])</span>
+        </div>
+<div class="viewcode-block" id="Struct3DPoints.get_range"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.get_range">[docs]</a>    <span class="k">def</span> <span class="nf">get_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update min, max for all coordinate axes and store in</span>
+<span class="sd">        self.xmin, self.xmax, ...&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">])</span>
+        </div>
+<div class="viewcode-block" id="Struct3DPoints.create_formation_subset"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.create_formation_subset">[docs]</a>    <span class="k">def</span> <span class="nf">create_formation_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formation_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a subset (as another Struct3DPoints object) with specified formations only</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *formation_names* : list of formation names</span>
+<span class="sd">            </span>
+<span class="sd">        **Returns**:</span>
+<span class="sd">            Struct3DPoints object with subset of points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># create new object</span>
+        <span class="c"># reference to own class type for consistency with Struct3DFoliations</span>
+        <span class="n">pts_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">()</span>        
+        
+        <span class="c"># determine ids for all points of these formations:</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span> 
+        <span class="n">ids</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">formation_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">formation</span> <span class="ow">in</span> <span class="n">formation_names</span><span class="p">:</span>
+                <span class="n">ids</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">formation</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ids</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">formation_names</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        
+        <span class="c"># new length is identical to sum of ids bool array (all True elements)</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+         
+        <span class="c"># extract points</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">ids</span><span class="p">]</span>
+        
+        <span class="c"># update range</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+        
+        <span class="c"># update formation names</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+        
+        <span class="c"># get header from original</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span>
+        <span class="k">return</span> <span class="n">pts_subset</span>
+    </div>
+<div class="viewcode-block" id="Struct3DPoints.remove_formations"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.remove_formations">[docs]</a>    <span class="k">def</span> <span class="nf">remove_formations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formation_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove points for specified formations from the point set</span>
+<span class="sd">        </span>
+<span class="sd">        This function can be useful, for example, to remove one formation, perform</span>
+<span class="sd">        a thinning operation, and then add it back in with the `combine_with` function.</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *formation_names* = list of formations to be removed (or a single string to</span>
+<span class="sd">            remove only one formation)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Note: implementation is very similar to create_formation_subset, only inverse</span>
+        <span class="c"># and changes in original point set!</span>
+        
+        <span class="c"># determine ids for all points of these formations:</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span> 
+        <span class="n">ids</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">formation_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">formation</span> <span class="ow">in</span> <span class="n">formation_names</span><span class="p">:</span>
+                <span class="n">ids</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">formation</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ids</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">formation_names</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+ 
+        <span class="bp">self</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+         
+        <span class="c"># extract points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">ids</span><span class="p">]</span>
+        
+        <span class="c"># update range</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+        
+        <span class="c"># update formation names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+        </div>
+<div class="viewcode-block" id="Struct3DPoints.rename_formations"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.rename_formations">[docs]</a>    <span class="k">def</span> <span class="nf">rename_formations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rename_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Rename formation according to assignments in dictionary</span>
+<span class="sd">        </span>
+<span class="sd">        Mapping in dictionary is of the form:</span>
+<span class="sd">            old_name_1 : new_name_1, old_name_2 : new_name_2, ...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">rename_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Change name from </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">k</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+         
+        <span class="c"># update formation names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+        </div>
+<div class="viewcode-block" id="Struct3DPoints.extract_range"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.extract_range">[docs]</a>    <span class="k">def</span> <span class="nf">extract_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract subset for defined ranges</span>
+<span class="sd">        </span>
+<span class="sd">        Pass ranges as keywords: from_x, to_x, from_y, to_y, from_z, to_z</span>
+<span class="sd">        All not defined ranges are simply kept as before</span>
+<span class="sd">        </span>
+<span class="sd">        **Returns**:</span>
+<span class="sd">            pts_subset : Struct3DPoints data subset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">from_x</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;from_x&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span>
+        <span class="n">from_y</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;from_y&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span>
+        <span class="n">from_z</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;from_z&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span><span class="p">)</span>
+        <span class="n">to_x</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;to_x&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmax</span><span class="p">)</span>
+        <span class="n">to_y</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;to_y&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymax</span><span class="p">)</span>
+        <span class="n">to_z</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;to_z&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span><span class="p">)</span>
+        
+        <span class="c"># create new object</span>
+        <span class="c"># pts_subset = Struct3DPoints()</span>
+        <span class="n">pts_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">()</span>
+
+        <span class="c"># determine ids for points in range</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span> 
+        <span class="n">ids</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">ids</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">from_x</span><span class="p">)</span> <span class="o">*</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">from_y</span><span class="p">)</span> <span class="o">*</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">from_z</span><span class="p">)</span> <span class="o">*</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">to_x</span><span class="p">)</span> <span class="o">*</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">to_y</span><span class="p">)</span> <span class="o">*</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">to_z</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">True</span>
+        
+        <span class="c"># new length is identical to sum of ids bool array (all True elements)</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+         
+        <span class="c"># extract points</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">ids</span><span class="p">]</span>
+        
+        <span class="c"># update range</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+        
+        <span class="c"># update formation names</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+        
+        <span class="c"># get header from original</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span>
+        
+        <span class="k">return</span> <span class="n">pts_subset</span>
+        
+    </div>
+<div class="viewcode-block" id="Struct3DPoints.thin"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.thin">[docs]</a>    <span class="k">def</span> <span class="nf">thin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nz</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Thin data for one formations on grid with defined number of cells and store as subset</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *nx*, *ny*, *nz* = int : number of cells in each direction for thinning grid</span>
+<span class="sd">        </span>
+<span class="sd">        The thinning is performed on a raster and not &#39;formation-aware&#39;, </span>
+<span class="sd">        following this simple procedure:</span>
+
+<span class="sd">        (1) Iterate through grid</span>
+<span class="sd">        (2) If multiple points for formation in this cell: thin</span>
+<span class="sd">        (3a) If thin: Select one point in cell at random and keep this one!</span>
+<span class="sd">        (3b) else: if one point in raneg, keep it!</span>
+<span class="sd">        </span>
+<span class="sd">        Note: Thinning is performed for all formations, so make sure to create a subset</span>
+<span class="sd">        for a single formation first! </span>
+<span class="sd">        </span>
+<span class="sd">        **Returns**:</span>
+<span class="sd">            pts_subset = Struct3DPoints : subset with thinned data for formation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># DEVNOTE: This would be an awesome function to parallelise! Should be quite simple!</span>
+        
+        <span class="c"># first step: generate subset</span>
+        <span class="c"># pts_subset = self.create_formation_subset([formation])</span>
+         
+        <span class="c"># create new pointset:</span>
+        <span class="c"># reference to own class type for consistency with Struct3DFoliations</span>
+        <span class="n">pts_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">()</span>
+         
+        <span class="c"># determine cell boundaries of subset for thinning:</span>
+        <span class="n">delx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">nx</span>
+        <span class="n">bound_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xmin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">delx</span><span class="p">)</span>
+        <span class="n">dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ny</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ymax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span><span class="p">)</span> <span class="o">/</span> <span class="n">ny</span>
+        <span class="n">bound_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ymin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dely</span><span class="p">)</span>
+        <span class="n">delz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nz</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zmax</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">nz</span>
+        <span class="n">bound_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">delz</span><span class="p">)</span>
+        
+        <span class="n">ids_to_keep</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nz</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="c"># determin number of points in this cell</span>
+                    <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;bool&#39;</span><span class="p">)</span> 
+                    <span class="n">ids</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="n">ids</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">bound_x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">*</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">bound_y</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">bound_z</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">*</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bound_x</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bound_y</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bound_z</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])]</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c"># Thinning required!</span>
+                        <span class="c"># keep random point</span>
+                        <span class="n">ids_to_keep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ids</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
+                        
+<span class="c">#                        pts_subset.points[nx * ny * i + ny * j + k] = self.points[id_to_keep]</span>
+                        <span class="c"># assign to new pointset:</span>
+                    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> 
+                        <span class="c"># keep the one point, of course!</span>
+<span class="c">#                        pts_subset.points[nx * ny * i + ny * j + k] = self.points[ids[0]]</span>
+                        <span class="n">ids_to_keep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        
+        <span class="c"># now get points for all those ids:</span>
+        <span class="c"># extract points</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ids_to_keep</span><span class="p">)]</span>
+        
+        
+        <span class="c"># update range</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+        
+        <span class="c"># update length</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pts_subset</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        
+        <span class="c"># update formation names</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+        
+        <span class="c"># get header from original</span>
+        <span class="n">pts_subset</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span>
+                        
+        <span class="k">return</span> <span class="n">pts_subset</span>
+                        
+                                    </div>
+<div class="viewcode-block" id="Struct3DPoints.combine_with"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.combine_with">[docs]</a>    <span class="k">def</span> <span class="nf">combine_with</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pts_set</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine this point set with another point set</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *pts_set* = Struct3DPoints : points set to combine</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">pts_set</span><span class="o">.</span><span class="n">points</span><span class="p">))</span>
+        <span class="c"># update range and everything</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        
+        </div>
+<div class="viewcode-block" id="Struct3DPoints.plot_plane"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.plot_plane">[docs]</a>    <span class="k">def</span> <span class="nf">plot_plane</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plane</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create 2-D plots for point distribution</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *plane* = tuple of plane axes directions, e.g. (&#39;x&#39;,&#39;y&#39;) (default)</span>
+<span class="sd">        </span>
+<span class="sd">        **Optional Keywords**:</span>
+<span class="sd">            - *ax* = matplotlib axis object: if provided, plot is attached to this axis</span>
+<span class="sd">            - *formation_names* = list of formations : plot only points for specific formations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;color&quot;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;ax&quot;</span><span class="p">):</span>
+            <span class="c"># axis is provided, attach here</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;ax&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;formation_names&quot;</span><span class="p">):</span>
+            <span class="n">pts_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">(</span><span class="n">kwds</span><span class="p">[</span><span class="s">&#39;formation_names&#39;</span><span class="p">])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pts_subset</span><span class="o">.</span><span class="n">points</span><span class="p">[:][</span><span class="n">plane</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">pts_subset</span><span class="o">.</span><span class="n">points</span><span class="p">[:][</span><span class="n">plane</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">)</span>            
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[:][</span><span class="n">plane</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[:][</span><span class="n">plane</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="Struct3DPoints.plot_3D"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.plot_3D">[docs]</a>    <span class="k">def</span> <span class="nf">plot_3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a plot of points in 3-D</span>
+<span class="sd">        </span>
+<span class="sd">        **Optional keywords**:</span>
+<span class="sd">            - *ax* = matplotlib axis object: if provided, plot is attached to this axis</span>
+<span class="sd">            - *formation_names* = list of formations : plot only points for specific formations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;ax&quot;</span><span class="p">):</span>
+            <span class="c"># axis is provided, attach here</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;ax&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;formation_names&quot;</span><span class="p">):</span>
+            <span class="c"># create a subset with speficied formations, only</span>
+            <span class="n">pts_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">(</span><span class="n">kwds</span><span class="p">[</span><span class="s">&#39;formation_names&#39;</span><span class="p">])</span>
+            <span class="n">pts_subset</span><span class="o">.</span><span class="n">plot_3D</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># plot all    </span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">])</span>
+            </div>
+<div class="viewcode-block" id="Struct3DPoints.save"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DPoints.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save points set to file</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *filename* = string : name of new file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%.2f</span><span class="s">,</span><span class="si">%.2f</span><span class="s">,</span><span class="si">%.3f</span><span class="s">,</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        </div></div>
+<div class="viewcode-block" id="Struct3DFoliations"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DFoliations">[docs]</a><span class="k">class</span> <span class="nc">Struct3DFoliations</span><span class="p">(</span><span class="n">Struct3DPoints</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class container for foliations (i.e. orientations) exported from GeoModeller</span>
+<span class="sd">    </span>
+<span class="sd">    Mainly based on Struct3DPoints as must required functionality </span>
+<span class="sd">    for location of elements - some functions overwritten, e.g. save and parse to read orientation data,</span>
+<span class="sd">    as well!</span>
+<span class="sd">    </span>
+<span class="sd">    However, further methods might be added or adapted in the future, for example:</span>
+<span class="sd">    - downsampling according to (eigen)vector methods, e.g. the work from the Monash guys, etc.</span>
+<span class="sd">    - ploting of orientations in 2-D and 3-D</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Structural points data set</span>
+<span class="sd">        </span>
+<span class="sd">        **Optional keywords**:</span>
+<span class="sd">            - *filename* = string : filename of csv file with exported points to load</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># store point information in purpose defined numpy record</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ftype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;z&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;azimuth&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;dip&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;polarity&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s">&#39;formation&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">,</span> <span class="mi">32</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">kwds</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&quot;filename&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s">&#39;filename&#39;</span><span class="p">]</span>
+            <span class="c"># read data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_range</span><span class="p">()</span>
+
+    
+<div class="viewcode-block" id="Struct3DFoliations.parse"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DFoliations.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse filename and load data into numpy record</span>
+<span class="sd">        </span>
+<span class="sd">        The point information is stored in a purpose defined numpy record</span>
+<span class="sd">        self.points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># determine position of elements in header (for extension to foliations, etc.)</span>
+        <span class="n">h_elem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+        <span class="n">x_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;X&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">y_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;Y&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">z_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;Z&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">azi_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;azimuth&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">dip_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;dip&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pol_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;polarity&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">form_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_elem</span> <span class="o">==</span> <span class="s">&#39;formation&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># print x_id</span>
+        <span class="c"># create numpy array for points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">x_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">y_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">z_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;azimuth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">azi_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;dip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">dip_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;polarity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">pol_id</span><span class="p">])</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;formation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="n">form_id</span><span class="p">]</span>
+
+    </div>
+<div class="viewcode-block" id="Struct3DFoliations.save"><a class="viewcode-back" href="../../pygeomod.html#pygeomod.struct_data.Struct3DFoliations.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save points set to file</span>
+<span class="sd">        </span>
+<span class="sd">        **Arguments**:</span>
+<span class="sd">            - *filename* = string : name of new file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%.2f</span><span class="s">,</span><span class="si">%.2f</span><span class="s">,</span><span class="si">%.3f</span><span class="s">,</span><span class="si">%.3f</span><span class="s">,</span><span class="si">%.3f</span><span class="s">,</span><span class="si">%d</span><span class="s">,</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">],</span> 
+                                             <span class="n">point</span><span class="p">[</span><span class="s">&#39;azimuth&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;dip&#39;</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="s">&#39;polarity&#39;</span><span class="p">],</span>
+                                             <span class="n">point</span><span class="p">[</span><span class="s">&#39;formation&#39;</span><span class="p">]))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+     
+    
+    
+        
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">pygeomod 0.2 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Florian Wellmann.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

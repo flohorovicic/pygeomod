@@ -40,6 +40,15 @@ class GeomodellerClass:
     - Uncertainty Simulation
     - TWT to depth conversion
     - Data analysis, e.g. Auto-documentation"""
+    
+    def __init__():
+        """Wrapper for GeoModeller XML-datafiles to perform all kinds of data
+    manipulation and analysis on low level basis, e.g.:
+    - Uncertainty Simulation
+    - TWT to depth conversion
+    - Data analysis, e.g. Auto-documentation"""
+
+
     def load_geomodeller_file(self, xml_file):
         self.xml_file_name = xml_file
         try:

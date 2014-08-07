@@ -1,0 +1,540 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Analysis and modification of exported 3D Structural Data &mdash; pygeomod 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pygeomod 0.2 documentation" href="index.html" />
+    <link rel="next" title="Creating an irregular mesh from Geomodeller for SHEMAT simulations" href="Geomodeller-Export.html" />
+    <link rel="prev" title="pygeomod" href="readme.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Geomodeller-Export.html" title="Creating an irregular mesh from Geomodeller for SHEMAT simulations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="readme.html" title="pygeomod"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pygeomod 0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="analysis-and-modification-of-exported-3d-structural-data">
+<h1>Analysis and modification of exported 3D Structural Data<a class="headerlink" href="#analysis-and-modification-of-exported-3d-structural-data" title="Permalink to this headline">¶</a></h1>
+<p>All structural data from an entire GeoModeller project can be exported
+into ASCII files using the function in the GUI:</p>
+<p>Export -&gt; 3D Structural Data</p>
+<p>This method generates files for defined geological parameters:</p>
+<ul class="simple">
+<li>&#8220;Points&#8221; (i.e. formation contact points) and</li>
+<li>&#8220;Foliations&#8221; (i.e. orientations/ potential field gradients).</li>
+</ul>
+<p>Exported parameters include all those defined in sections as well as 3D
+data points.</p>
+<p>The <tt class="docutils literal"><span class="pre">struct_data</span></tt> package contains methods to check, visualise, and
+extract/modify parts of these exported data sets, for example to import
+them into a different Geomodeller project. Several of these methods will
+be explained and tested in this notebook.</p>
+<p>The export function generates files with the endings <tt class="docutils literal"><span class="pre">_Foliations.csv</span></tt>
+and <tt class="docutils literal"><span class="pre">_Points.csv</span></tt>. Classes for both of these data sets are available
+to handle them accordingly.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># import module</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="c"># as long as not in Pythonpath, we have to set directory:</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">r&#39;/Users/flow/git/pygeomod&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">struct_data</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre>%pylab inline
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>Populating the interactive namespace from numpy and matplotlib
+</pre></div>
+</div>
+<pre class="literal-block">
+WARNING: pylab import has clobbered these variables: ['norm']
+<cite>%matplotlib</cite> prevents importing * from pylab and numpy
+</pre>
+<div class="section" id="point-data-sets">
+<h2>Point data sets<a class="headerlink" href="#point-data-sets" title="Permalink to this headline">¶</a></h2>
+<p>We will first start with reading and analysing the point data sets:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts</span><span class="o">.</span><span class="n">get_formation_names</span><span class="p">()</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">formation_names</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">array</span><span class="p">([</span><span class="s">&#39;Basement&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_01&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_02&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_03&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_04&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_05&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_06&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_07&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_08&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_09&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_10&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_11_Serpentine&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_12_Darling&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_13&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_14&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_15&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_16&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_Transverse_02&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_Transverse_03&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_Transverse_04&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_Transverse_05&#39;</span><span class="p">,</span>
+       <span class="s">&#39;Cattamarra_Coal_Measures&#39;</span><span class="p">,</span> <span class="s">&#39;Eneabba_Fm&#39;</span><span class="p">,</span> <span class="s">&#39;Gage_Ss&#39;</span><span class="p">,</span>
+       <span class="s">&#39;Kockatea_Shale&#39;</span><span class="p">,</span> <span class="s">&#39;Late_Triassic&#39;</span><span class="p">,</span> <span class="s">&#39;Leederville_Fm&#39;</span><span class="p">,</span> <span class="s">&#39;Lesueur_Ss&#39;</span><span class="p">,</span>
+       <span class="s">&#39;Lower_crust&#39;</span><span class="p">,</span> <span class="s">&#39;Moho&#39;</span><span class="p">,</span> <span class="s">&#39;Neocomian_Unc&#39;</span><span class="p">,</span> <span class="s">&#39;Permian&#39;</span><span class="p">,</span> <span class="s">&#39;Sea_level&#39;</span><span class="p">,</span>
+       <span class="s">&#39;South_Perth_Sh&#39;</span><span class="p">,</span> <span class="s">&#39;Topo&#39;</span><span class="p">,</span> <span class="s">&#39;Yarragadee_Fm&#39;</span><span class="p">,</span> <span class="s">&#39;Yilgarn&#39;</span><span class="p">],</span>
+      <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;|S32&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_6_0.png" src="_images/3D-Structural-Data_6_0.png" />
+<p>Or, a bit more complex plotting options:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">133</span><span class="p">)</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">)</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">plane</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">),</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">plane</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">),</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax3</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_8_0.png" src="_images/3D-Structural-Data_8_0.png" />
+<p>We can also create plots of points for specified formations only:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">133</span><span class="p">)</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">formation_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Basement&#39;</span><span class="p">])</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">formation_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Yarragadee_Fm&#39;</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax3</span><span class="p">,</span> <span class="n">formation_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Lesueur_Ss&#39;</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_10_0.png" src="_images/3D-Structural-Data_10_0.png" />
+<p>It is also possible to create 3-D perspective plots (not many options
+yet, but a lot more could be included):</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts</span><span class="o">.</span><span class="n">plot_3D</span><span class="p">(</span><span class="n">formation_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Basement&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_12_0.png" src="_images/3D-Structural-Data_12_0.png" />
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts</span><span class="o">.</span><span class="n">formation_names</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">array</span><span class="p">([</span><span class="s">&#39;Basement&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_01&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_02&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_03&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_04&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_05&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_06&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_07&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_08&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_09&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_10&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_11_Serpentine&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_12_Darling&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_13&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_14&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_15&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_16&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_Transverse_02&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_Transverse_03&#39;</span><span class="p">,</span>
+       <span class="s">&#39;CPB_Fault_Transverse_04&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_Transverse_05&#39;</span><span class="p">,</span>
+       <span class="s">&#39;Cattamarra_Coal_Measures&#39;</span><span class="p">,</span> <span class="s">&#39;Eneabba_Fm&#39;</span><span class="p">,</span> <span class="s">&#39;Gage_Ss&#39;</span><span class="p">,</span>
+       <span class="s">&#39;Kockatea_Shale&#39;</span><span class="p">,</span> <span class="s">&#39;Late_Triassic&#39;</span><span class="p">,</span> <span class="s">&#39;Leederville_Fm&#39;</span><span class="p">,</span> <span class="s">&#39;Lesueur_Ss&#39;</span><span class="p">,</span>
+       <span class="s">&#39;Lower_crust&#39;</span><span class="p">,</span> <span class="s">&#39;Moho&#39;</span><span class="p">,</span> <span class="s">&#39;Neocomian_Unc&#39;</span><span class="p">,</span> <span class="s">&#39;Permian&#39;</span><span class="p">,</span> <span class="s">&#39;Sea_level&#39;</span><span class="p">,</span>
+       <span class="s">&#39;South_Perth_Sh&#39;</span><span class="p">,</span> <span class="s">&#39;Topo&#39;</span><span class="p">,</span> <span class="s">&#39;Yarragadee_Fm&#39;</span><span class="p">,</span> <span class="s">&#39;Yilgarn&#39;</span><span class="p">],</span>
+      <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;|S32&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<h3><p>Generate subset for defined formations</p>
+</h3><p>It is often required to generate a subset of the points, either for
+specified formations only (although that could also be done during the
+input in GeoModeller...), or for a defined range/ extent. These options
+are possible with the package, and selections can be stored to new
+files:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+<span class="n">pts_subset</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">([</span><span class="s">&#39;Basement&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts_subset</span><span class="o">.</span><span class="n">len</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="mi">1209</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts_subset</span><span class="o">.</span><span class="n">plot_3D</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_17_0.png" src="_images/3D-Structural-Data_17_0.png" />
+<h3><p>Generating a subset for a subvolume</p>
+</h3><p>It is also possible to extract data in only a specified range. The range
+is defined with keywords, e.g. <tt class="docutils literal"><span class="pre">from_x</span> <span class="pre">=</span> <span class="pre">xx</span></tt>, <tt class="docutils literal"><span class="pre">to_x</span> <span class="pre">=</span> <span class="pre">xx</span></tt>. All other
+ranges (not stated) are simply kept as before.</p>
+<p>Here an example:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">xmax</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">ymin</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">ymax</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="mf">259000.0</span><span class="p">,</span> <span class="mf">415000.0</span><span class="p">,</span> <span class="mf">6335020.0</span><span class="p">,</span> <span class="mf">6610000.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts_subset</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">extract_range</span><span class="p">(</span><span class="n">from_x</span> <span class="o">=</span> <span class="mf">350000.</span><span class="p">,</span> <span class="n">to_y</span> <span class="o">=</span> <span class="mi">6500000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now let&#8217;s compare the two sets in a plot:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">formation_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Basement&#39;</span><span class="p">])</span>
+<span class="n">pts_subset</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">formation_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Basement&#39;</span><span class="p">])</span>
+<span class="c"># set ranges to compare plots</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">((</span><span class="n">pts</span><span class="o">.</span><span class="n">xmin</span><span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">xmax</span><span class="o">+</span><span class="mi">10000</span><span class="p">))</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">pts</span><span class="o">.</span><span class="n">ymin</span><span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">ymax</span><span class="o">+</span><span class="mi">10000</span><span class="p">))</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">((</span><span class="n">pts</span><span class="o">.</span><span class="n">xmin</span><span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">xmax</span><span class="o">+</span><span class="mi">10000</span><span class="p">))</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">pts</span><span class="o">.</span><span class="n">ymin</span><span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="n">pts</span><span class="o">.</span><span class="n">ymax</span><span class="o">+</span><span class="mi">10000</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="mf">6325020.0</span><span class="p">,</span> <span class="mf">6620000.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_23_1.png" src="_images/3D-Structural-Data_23_1.png" />
+<h3><p>Thin data</p>
+</h3><p>In many cases, a lot of data has been digitised for specific locations.
+This can lead to problems with the kriging interpolation in Geomodeller.
+A simple function to thin data is implemented here to avoid this
+problem. The method is really simple and can be quite compute intense
+(for smalll grids), so check what you are doing!</p>
+<p>Note: If spatial data is imported, Geomodeller actually has a
+functionality for a type of &#8220;thinning&#8221; - if you work with this data
+(e.g. digitised from MapInfo), then this might be the function to use...</p>
+<p>The thinning is performed for <strong>the entire set</strong> and <strong>not aware of
+formations</strong> (so far...) and works on a grid/ raster base for defined
+number of cells in each axis direction of <tt class="docutils literal"><span class="pre">nx,</span> <span class="pre">ny,</span> <span class="pre">nz</span></tt>. The best
+procedure is therefore to first create a subset for one formation, and
+then to perform the thinning for this subset:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+<span class="n">pts_sub1</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">(</span><span class="s">&#39;Permian&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let&#8217;s have a look at one formation, the Permian. We can clearly see the
+dense data in the overlapping regions and the highly defined traces
+through the model:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">elev</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">azim</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span>
+<span class="n">pts_sub1</span><span class="o">.</span><span class="n">plot_3D</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">)</span>
+<span class="n">pts_sub1</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_27_0.png" src="_images/3D-Structural-Data_27_0.png" />
+<p>We want to thin this now with a grid which is <tt class="docutils literal"><span class="pre">n</span></tt> times smaller than
+the extent in each direction:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">nx</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">ny</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">nz</span> <span class="o">=</span> <span class="mi">20</span>
+
+<span class="n">pts_sub2</span> <span class="o">=</span> <span class="n">pts_sub1</span><span class="o">.</span><span class="n">thin</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">pts_sub1</span><span class="o">.</span><span class="n">len</span><span class="p">,</span> <span class="n">pts_sub2</span><span class="o">.</span><span class="n">len</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="mi">810</span><span class="p">,</span> <span class="mi">319</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And compare those to the set above in a plot:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">elev</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">azim</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span>
+<span class="n">pts_sub2</span><span class="o">.</span><span class="n">plot_3D</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">)</span>
+<span class="n">pts_sub2</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_32_0.png" src="_images/3D-Structural-Data_32_0.png" />
+<p>Nice, it seems to work (surprised myself...)</p>
+<p>Of course, it&#8217;s up to the user to evaluate if the thinning is creating
+&#8220;wrong&#8221; Geomodels afterwards... good luck!</p>
+<h3><p>Combine two point sets</p>
+</h3><p>It might be important to combine datasets, for example after thinning
+two different geological formations. As an example, we will combine the
+thinned Permian data set from above with the (complete) set for the
+Basement:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+<span class="n">pts_sub3</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">(</span><span class="s">&#39;Basement&#39;</span><span class="p">)</span>
+<span class="c"># create a copy for comparison:</span>
+<span class="n">pts_sub3b</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">(</span><span class="s">&#39;Basement&#39;</span><span class="p">)</span>
+
+<span class="n">pts_sub3</span><span class="o">.</span><span class="n">combine_with</span><span class="p">(</span><span class="n">pts_sub2</span><span class="p">)</span>
+
+<span class="c"># create a plot of all three point sets:</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">133</span><span class="p">)</span>
+<span class="n">pts_sub3b</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">((</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">),</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">)</span>
+<span class="n">pts_sub2</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">((</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">),</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+<span class="n">pts_sub3</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">((</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">),</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax3</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">pts_sub3</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="n">pts_sub3</span><span class="o">.</span><span class="n">zmax</span><span class="p">))</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">pts_sub3</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="n">pts_sub3</span><span class="o">.</span><span class="n">zmax</span><span class="p">))</span>
+<span class="n">ax3</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="n">pts_sub3</span><span class="o">.</span><span class="n">zmin</span><span class="p">,</span> <span class="n">pts_sub3</span><span class="o">.</span><span class="n">zmax</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="o">-</span><span class="mf">15400.0</span><span class="p">,</span> <span class="mf">454.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_35_1.png" src="_images/3D-Structural-Data_35_1.png" />
+<p><strong>Note</strong>: This function changes the pointset in place and does not
+return a new one (as for thinning, subsetting, etc.)</p>
+<h3><p>Remove formation from point set</p>
+</h3><p>It is also possible to remove one or multiple formations from the set.
+This functionality can be used in combination with thinning and
+combining to thin only the data set for one formation, and then combine
+it back into the original set:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;Original length of point set: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">pts</span><span class="o">.</span><span class="n">len</span><span class="p">)</span>
+
+
+<span class="c"># formation to perform thinning:</span>
+<span class="n">formation</span> <span class="o">=</span> <span class="s">&#39;Permian&#39;</span>
+
+<span class="c"># first step: extract formation</span>
+<span class="n">pts_perm</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">(</span><span class="n">formation</span><span class="p">)</span>
+
+<span class="c"># now remove from original</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">remove_formations</span><span class="p">(</span><span class="n">formation</span><span class="p">)</span>
+
+<span class="c"># perform thinning</span>
+<span class="n">nx</span> <span class="o">=</span> <span class="n">ny</span> <span class="o">=</span> <span class="n">nz</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">pts_perm_thinned</span> <span class="o">=</span> <span class="n">pts_perm</span><span class="o">.</span><span class="n">thin</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+
+<span class="c"># and now combine back with original:</span>
+<span class="n">pts</span><span class="o">.</span><span class="n">combine_with</span><span class="p">(</span><span class="n">pts_perm_thinned</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;New length of point set (after thinning): </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">pts</span><span class="o">.</span><span class="n">len</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>Original length of point set: 14184
+New length of point set (after thinning): 13693
+</pre></div>
+</div>
+<h3><p>Save new set to file</p>
+</h3><p>Of course, we want to save this new and adapted data set to a file! This
+is also simply possible with:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+
+<span class="c"># extract defined range and only Basement points:</span>
+<span class="n">pts_subset</span> <span class="o">=</span> <span class="n">pts</span><span class="o">.</span><span class="n">create_formation_subset</span><span class="p">([</span><span class="s">&#39;Basement&#39;</span><span class="p">])</span>
+<span class="n">pts_subset_1</span> <span class="o">=</span> <span class="n">pts_subset</span><span class="o">.</span><span class="n">extract_range</span><span class="p">(</span><span class="n">from_x</span> <span class="o">=</span> <span class="mf">350000.</span><span class="p">,</span> <span class="n">to_y</span> <span class="o">=</span> <span class="mi">6500000</span><span class="p">)</span>
+
+<span class="n">pts_subset_1</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&quot;new_Points.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<h3><p>Change formation names</p>
+</h3><p>Sometime it is required to adjust the name of a formation or unit in the
+point set, for example for combination with another point set. This
+operation is possible with a dictionary for one or more formations with
+a mapping old -&gt; new name:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">pts</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DPoints</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Points.csv&#39;</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="n">pts</span><span class="o">.</span><span class="n">formation_names</span>
+
+<span class="n">rename_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Basement&#39;</span> <span class="p">:</span> <span class="s">&#39;Basement_new&#39;</span><span class="p">,</span> <span class="s">&#39;CPB_Fault_01&#39;</span> <span class="p">:</span> <span class="s">&#39;Euler&#39;</span><span class="p">}</span>
+
+<span class="n">pts</span><span class="o">.</span><span class="n">rename_formations</span><span class="p">(</span><span class="n">rename_dict</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="n">pts</span><span class="o">.</span><span class="n">formation_names</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>[&#39;Basement&#39; &#39;CPB_Fault_01&#39; &#39;CPB_Fault_02&#39; &#39;CPB_Fault_03&#39; &#39;CPB_Fault_04&#39;
+ &#39;CPB_Fault_05&#39; &#39;CPB_Fault_06&#39; &#39;CPB_Fault_07&#39; &#39;CPB_Fault_08&#39; &#39;CPB_Fault_09&#39;
+ &#39;CPB_Fault_10&#39; &#39;CPB_Fault_11_Serpentine&#39; &#39;CPB_Fault_12_Darling&#39;
+ &#39;CPB_Fault_13&#39; &#39;CPB_Fault_14&#39; &#39;CPB_Fault_15&#39; &#39;CPB_Fault_16&#39;
+ &#39;CPB_Fault_Transverse_02&#39; &#39;CPB_Fault_Transverse_03&#39;
+ &#39;CPB_Fault_Transverse_04&#39; &#39;CPB_Fault_Transverse_05&#39;
+ &#39;Cattamarra_Coal_Measures&#39; &#39;Eneabba_Fm&#39; &#39;Gage_Ss&#39; &#39;Kockatea_Shale&#39;
+ &#39;Late_Triassic&#39; &#39;Leederville_Fm&#39; &#39;Lesueur_Ss&#39; &#39;Lower_crust&#39; &#39;Moho&#39;
+ &#39;Neocomian_Unc&#39; &#39;Permian&#39; &#39;Sea_level&#39; &#39;South_Perth_Sh&#39; &#39;Topo&#39;
+ &#39;Yarragadee_Fm&#39; &#39;Yilgarn&#39;]
+Change name from CPB_Fault_01 to Euler
+Change name from Basement to Basement_new
+[&#39;Basement_new&#39; &#39;CPB_Fault_02&#39; &#39;CPB_Fault_03&#39; &#39;CPB_Fault_04&#39; &#39;CPB_Fault_05&#39;
+ &#39;CPB_Fault_06&#39; &#39;CPB_Fault_07&#39; &#39;CPB_Fault_08&#39; &#39;CPB_Fault_09&#39; &#39;CPB_Fault_10&#39;
+ &#39;CPB_Fault_11_Serpentine&#39; &#39;CPB_Fault_12_Darling&#39; &#39;CPB_Fault_13&#39;
+ &#39;CPB_Fault_14&#39; &#39;CPB_Fault_15&#39; &#39;CPB_Fault_16&#39; &#39;CPB_Fault_Transverse_02&#39;
+ &#39;CPB_Fault_Transverse_03&#39; &#39;CPB_Fault_Transverse_04&#39;
+ &#39;CPB_Fault_Transverse_05&#39; &#39;Cattamarra_Coal_Measures&#39; &#39;Eneabba_Fm&#39; &#39;Euler&#39;
+ &#39;Gage_Ss&#39; &#39;Kockatea_Shale&#39; &#39;Late_Triassic&#39; &#39;Leederville_Fm&#39; &#39;Lesueur_Ss&#39;
+ &#39;Lower_crust&#39; &#39;Moho&#39; &#39;Neocomian_Unc&#39; &#39;Permian&#39; &#39;Sea_level&#39;
+ &#39;South_Perth_Sh&#39; &#39;Topo&#39; &#39;Yarragadee_Fm&#39; &#39;Yilgarn&#39;]
+</pre></div>
+</div>
+<h3><p>More ideas</p>
+</h3><p>The methods could be used to check different geological interpretations
+quickly, i.e. different data sets for Moho structures, etc.: Create one
+model, load different data sets and compute the models.</p>
+<p>It would also be possible to use the method directly to reproduce the
+&#8220;data thinning&#8221; example from Martin Putz&#8217; 2001 paper - might be
+interesting as an indication for interpolation stability.</p>
+<p>In extension: it should be possible to perform a kind of &#8220;bootstrapping&#8221;
+method to test interpolation uncertainty with respect to data density!</p>
+<p>I didn&#8217;t check, but it might be possible to load 3D structural data
+through the API (although not sure, as a lot of checks are performed in
+the GUI). If this is possible, then all of the previous methods could
+easily be automated and/or included in model validity and uncertainty
+estimation steps!</p>
+<p>And with a bit of coding:</p>
+<p>It should be relatively simple to add some more functionality, for
+example to create a simple data density plot, as a &#8220;zero order&#8221;
+estimation of model uncertainty with respect to available data (i.e. no
+data, high uncertainty).</p>
+</div>
+</div>
+<div class="section" id="orientation-data-sets">
+<h1>Orientation Data Sets<a class="headerlink" href="#orientation-data-sets" title="Permalink to this headline">¶</a></h1>
+<p>The functionality for orientation data sets is very similar to the point
+data sets as the main functionality is really for sorting and adapting
+parameters according to location and formation, and not so much for
+actual operations that affect the vectorial information (althoguh it
+might be interesting to include a vector-specific upscaling/ averaging,
+etc. - but this is not implemented to date).</p>
+<p>Loading a data set is exactly as before, and the plotting commands now
+show the location of orientation data:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># only required during testing stage</span>
+<span class="nb">reload</span><span class="p">(</span><span class="n">struct_data</span><span class="p">)</span>
+<span class="c"># use example data</span>
+<span class="n">fol</span> <span class="o">=</span> <span class="n">struct_data</span><span class="o">.</span><span class="n">Struct3DFoliations</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="s">r&#39;../data/wt_Foliations.csv&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fol</span><span class="o">.</span><span class="n">plot_3D</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_46_0.png" src="_images/3D-Structural-Data_46_0.png" />
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fol</span><span class="o">.</span><span class="n">plot_plane</span><span class="p">(</span><span class="n">formation_names</span> <span class="o">=</span> <span class="s">&#39;Yarragadee_Fm&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/3D-Structural-Data_47_0.png" src="_images/3D-Structural-Data_47_0.png" />
+</div>
+<div class="section" id="und-das-ist-fuer-jan">
+<h1>Und das ist fuer Jan<a class="headerlink" href="#und-das-ist-fuer-jan" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li>bla</li>
+<li>bla2</li>
+</ul>
+<p>Markdown translates</p>
+<p>italic</p>
+<p>This is <em>italic</em> text and this is <strong>bold</strong></p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Analysis and modification of exported 3D Structural Data</a><ul>
+<li><a class="reference internal" href="#point-data-sets">Point data sets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#orientation-data-sets">Orientation Data Sets</a></li>
+<li><a class="reference internal" href="#und-das-ist-fuer-jan">Und das ist fuer Jan</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="readme.html"
+                        title="previous chapter">pygeomod</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Geomodeller-Export.html"
+                        title="next chapter">Creating an irregular mesh from Geomodeller for SHEMAT simulations</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/3D-Structural-Data.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Geomodeller-Export.html" title="Creating an irregular mesh from Geomodeller for SHEMAT simulations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="readme.html" title="pygeomod"
+             >previous</a> |</li>
+        <li><a href="index.html">pygeomod 0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Florian Wellmann.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

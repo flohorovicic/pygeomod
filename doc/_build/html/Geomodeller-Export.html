@@ -1,0 +1,396 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating an irregular mesh from Geomodeller for SHEMAT simulations &mdash; pygeomod 0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="pygeomod 0.2 documentation" href="index.html" />
+    <link rel="next" title="pygeomod" href="modules.html" />
+    <link rel="prev" title="Analysis and modification of exported 3D Structural Data" href="3D-Structural-Data.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="pygeomod"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="3D-Structural-Data.html" title="Analysis and modification of exported 3D Structural Data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pygeomod 0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="creating-an-irregular-mesh-from-geomodeller-for-shemat-simulations">
+<h1>Creating an irregular mesh from Geomodeller for SHEMAT simulations<a class="headerlink" href="#creating-an-irregular-mesh-from-geomodeller-for-shemat-simulations" title="Permalink to this headline">¶</a></h1>
+<p>Regular meshes can be exported directly from within the Geomodeller GUI.
+However, in many cases, a more flexible solution is required, for
+example to:</p>
+<ul class="simple">
+<li>update a mesh automatically (without using the GUI), or</li>
+<li>create an irregular mesh with refined regions</li>
+</ul>
+<p>These steps can easily be performed with a set of Python scripts and C
+programs that access Geomodellers funcionality through the API.</p>
+<p>The main funcionality required here is combined in the Python package
+<tt class="docutils literal"><span class="pre">pygeomod</span></tt>. Two main packages are required: <tt class="docutils literal"><span class="pre">geogrid.py</span></tt> is the most
+recent development and contains a (relatively general) class definition
+for rectangular grids in general, with the link to Geomodeller in
+particular. The package ´geomodeller_xml_obj.py` contains methods to
+access and modify information stored in the Geomodeller xml
+Project-files. This functionality can be used, for example, to change
+geological input parameters (e.g. dip of a fault) directly from the
+Python script.</p>
+<hr class="docutils" />
+<p>A note on installation:</p>
+<p>The most tricky part is to get the API properly installed, all libraries
+linked, and compiled on a system. On esim39, the required library path
+settings are defined in</p>
+<p><tt class="docutils literal"><span class="pre">adjust_to_jni.sh</span></tt></p>
+<p>Another important point (for now, should be fixed at some stage...) is
+that the shared object <tt class="docutils literal"><span class="pre">libgeomod.so</span></tt> has to be located in the current
+directory... time to write a proper make file, but to date that&#8217;s the
+stage the project is in.</p>
+<hr class="docutils" />
+<p>We will first start here with an example for the generation of an
+rectilinear refined mesh for a simulation with SHEMAT.</p>
+<div class="code python highlight-python"><div class="highlight"><pre># first step: import standard libraries and set pylab for plotting functionalities
+%pylab inline
+import numpy as np
+import matplotlib.pyplot as plt
+import sys, os
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>Welcome to pylab, a matplotlib-based Python environment [backend: module://IPython.zmq.pylab.backend_inline].
+For more information, type &#39;help(pylab)&#39;.
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># Add path to pygeomod and import module (note: this is only required because it can&#39;t be installed properly at the moment)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">r&#39;/home/jni/git/tmp/pygeomod_tmp&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">geogrid</span>
+</pre></div>
+</div>
+<div class="section" id="creating-a-regular-grid">
+<h2>Creating a regular grid<a class="headerlink" href="#creating-a-regular-grid" title="Permalink to this headline">¶</a></h2>
+<p>The geogrid module contains a variety of methods to generate grids. In
+combinbation wtih Geomodeller, the easiest thing to do is to create a
+regular mesh from a Geomodeller project:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># Define path to geomodeller model file:</span>
+<span class="n">geomodel</span> <span class="o">=</span> <span class="s">r&#39;/home/jni/git/tmp/geomuce/gemuce_tmp/examples/simple_three_layer/simple_three_layer.xml&#39;</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="nb">reload</span><span class="p">(</span><span class="n">geogrid</span><span class="p">)</span> <span class="c"># only required for development stage - can be removed afterwards</span>
+<span class="c"># Now: define a GeoGrid object:</span>
+<span class="n">G1</span> <span class="o">=</span> <span class="n">geogrid</span><span class="o">.</span><span class="n">GeoGrid</span><span class="p">()</span>
+<span class="c"># and set the boundaries/ model extent according to the Geomodeller model:</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">get_dimensions_from_geomodeller_xml_project</span><span class="p">(</span><span class="n">geomodel</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># and create a regular grid for a defined number of cells in each direction:</span>
+<span class="n">nx</span> <span class="o">=</span> <span class="mi">25</span>
+<span class="n">ny</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">nz</span> <span class="o">=</span> <span class="mi">25</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">define_regular_grid</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># ...and, finally, update the grid properties on the base of the Geomodeller model:</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">update_from_geomodeller_project</span><span class="p">(</span><span class="n">geomodel</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The grid is stored in the object variable <tt class="docutils literal"><span class="pre">G1.grid</span></tt> as a numpy array.</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="nb">type</span><span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">grid</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>
+</pre></div>
+</div>
+<p>So the grid can directly be used to create slices, plots, further
+caluclations, etc. However, a lot of functionality is alread implemented
+in the geogrid package. For example, slice plots through the model can
+simply be generated with:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">G1</span><span class="o">.</span><span class="n">plot_section</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s">&#39;RdBu&#39;</span><span class="p">)</span> <span class="c"># more plotting options possible, generally following the logic of matplotlibs imshow function</span>
+</pre></div>
+</div>
+<img alt="_images/Geomodeller-Export_11_0.png" src="_images/Geomodeller-Export_11_0.png" />
+<p>It is also possible to export the model directly to VTK - however, this
+requires an installation of the pyevtk package which is not installed on
+esim for now:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">G1</span><span class="o">.</span><span class="n">export_to_vtk</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>---------------------------------------------------------------------------
+ImportError                               Traceback (most recent call last)
+
+&lt;ipython-input-71-972ad06a1420&gt; in &lt;module&gt;()
+----&gt; 1 G1.export_to_vtk()
+
+
+/home/jni/git/tmp/pygeomod_tmp/geogrid.py in export_to_vtk(self, vtk_filename, real_coords, **kwds)
+    327         grid = kwds.get(&quot;grid&quot;, self.grid)
+    328         var_name = kwds.get(&quot;var_name&quot;, &quot;Geology&quot;)
+--&gt; 329         from evtk.hl import gridToVTK
+    330         # define coordinates
+    331         x = np.zeros(self.nx + 1)
+
+
+ImportError: No module named evtk.hl
+</pre></div>
+</div>
+</div>
+<div class="section" id="rectilinear-grids">
+<h2>Rectilinear grids<a class="headerlink" href="#rectilinear-grids" title="Permalink to this headline">¶</a></h2>
+<p>Creating a rectilinear grid requires only that the cell spacings are
+explicitly defined. Everything else is exactly the same as before. Note
+that it is (at the moment) your responsibility to assing proper spacings
+- if you go beyond the bounds of the Geomodel, the function will not
+crash, but return the standard Geomodeller &#8220;out&#8221; value (usually the
+number of stratigraphic units + 1).</p>
+<p>One way to create meshes in the correct range is, of course, to use the
+extent of the Geomodel, determined with the function:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="nb">reload</span><span class="p">(</span><span class="n">geogrid</span><span class="p">)</span> <span class="c"># only required for development stage - can be removed afterwards</span>
+<span class="c"># Now: define a GeoGrid object:</span>
+<span class="n">G1</span> <span class="o">=</span> <span class="n">geogrid</span><span class="o">.</span><span class="n">GeoGrid</span><span class="p">()</span>
+<span class="c"># and set the boundaries/ model extent according to the Geomodeller model:</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">get_dimensions_from_geomodeller_xml_project</span><span class="p">(</span><span class="n">geomodel</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># The extent of the Geomodeller model can be obtained with:</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">xmin</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">xmax</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="c"># and the extent with:</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">extent_x</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="mi">1000</span>
+</pre></div>
+</div>
+<p>Let&#8217;s be a bit fancy and create the horizontal (x,y) grid with a core
+region of high refinement and increasing mesh sizes towards the
+boundary. First, we define the geometry:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">core_region</span> <span class="o">=</span> <span class="mi">100</span> <span class="c"># m</span>
+<span class="c"># define cell width in core region:</span>
+<span class="n">cell_width_core</span> <span class="o">=</span> <span class="mi">25</span> <span class="c"># m</span>
+<span class="n">del_core</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">core_region</span> <span class="o">/</span> <span class="n">cell_width_core</span><span class="p">))</span> <span class="o">*</span> <span class="n">cell_width_core</span>
+<span class="c"># and the number of cells in the boundary regions (the innermost cell has the size of the core cells):</span>
+<span class="n">n_boundary</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="c"># now determine the boundary width on both sides of the core region:</span>
+<span class="n">width_boundary_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">extent_x</span> <span class="o">-</span> <span class="n">core_region</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+<span class="n">width_boundary_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">extent_y</span> <span class="o">-</span> <span class="n">core_region</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+</pre></div>
+</div>
+<p>A little helper function in the <tt class="docutils literal"><span class="pre">geogrid</span></tt> package can be used to
+determine an optimal cell increase factor for the boundary cells for a
+given width an a number of cells, and a fixed inner cell width which we
+take as the width of the core cells for a neat transition:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">dx_boundary</span> <span class="o">=</span> <span class="n">geogrid</span><span class="o">.</span><span class="n">optimial_cell_increase</span><span class="p">(</span><span class="n">cell_width_core</span><span class="p">,</span> <span class="n">n_boundary</span><span class="p">,</span> <span class="n">width_boundary_x</span><span class="p">)</span>
+<span class="n">dy_boundary</span> <span class="o">=</span> <span class="n">geogrid</span><span class="o">.</span><span class="n">optimial_cell_increase</span><span class="p">(</span><span class="n">cell_width_core</span><span class="p">,</span> <span class="n">n_boundary</span><span class="p">,</span> <span class="n">width_boundary_y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We now simply combine the boundary and core cells for the complete
+discretisation array:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">delx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">dx_boundary</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">del_core</span><span class="p">,</span> <span class="n">dx_boundary</span><span class="p">))</span> <span class="c"># first array reversed from large to small cells</span>
+<span class="n">dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">dy_boundary</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">del_core</span><span class="p">,</span> <span class="n">dy_boundary</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>A plot of the grid:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">dx</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">delx</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">dy</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dely</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">delx</span><span class="p">)))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">dely</span><span class="p">)))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">999.99999999999864</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/Geomodeller-Export_25_1.png" src="_images/Geomodeller-Export_25_1.png" />
+<p>In z-direction we will create a regular mesh:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">nz</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">delz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nz</span><span class="p">)</span> <span class="o">*</span> <span class="n">G1</span><span class="o">.</span><span class="n">extent_z</span> <span class="o">/</span> <span class="n">nz</span>
+</pre></div>
+</div>
+<p>Ok, back to the geogrid package: we now assign the cell discretisation
+arrays to the geogrid object and populate the grid with geology ids
+determined from the Geomodeller model:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">G1</span><span class="o">.</span><span class="n">define_irregular_grid</span><span class="p">(</span><span class="n">delx</span><span class="p">,</span> <span class="n">dely</span><span class="p">,</span> <span class="n">delz</span><span class="p">)</span>
+<span class="n">G1</span><span class="o">.</span><span class="n">update_from_geomodeller_project</span><span class="p">(</span><span class="n">geomodel</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">G1</span><span class="o">.</span><span class="n">grid</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">array</span><span class="p">([[[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">]],</span>
+
+       <span class="p">[[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">]],</span>
+
+       <span class="p">[[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">]],</span>
+
+       <span class="o">...</span><span class="p">,</span>
+       <span class="p">[[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">]],</span>
+
+       <span class="p">[[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">]],</span>
+
+       <span class="p">[[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="o">...</span><span class="p">,</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span>  <span class="mf">1.</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">,</span>  <span class="mf">3.</span><span class="p">]]])</span>
+</pre></div>
+</div>
+<p>The simple plotting functions don&#8217;t work for irregular/ rectilinear
+grids at to date (as imshow can only plot regular grids). Export to VTK
+would work, in principle.</p>
+<p>What we can do, however, is create a SHEMAT nml file (for the old SHEMAT
+version) directly from the grid:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">r&#39;/home/jni/git/tmp/PySHEMAT/PySHEMAT-master&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">PySHEMAT</span>
+</pre></div>
+</div>
+<div class="code python highlight-python"><div class="highlight"><pre><span class="n">S1</span> <span class="o">=</span> <span class="n">PySHEMAT</span><span class="o">.</span><span class="n">Shemat_file</span><span class="p">(</span><span class="n">from_geogrid</span> <span class="o">=</span> <span class="n">G1</span><span class="p">,</span> <span class="n">nml_filename</span> <span class="o">=</span> <span class="s">&#39;updated_model.nml&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>create empty file
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Creating an irregular mesh from Geomodeller for SHEMAT simulations</a><ul>
+<li><a class="reference internal" href="#creating-a-regular-grid">Creating a regular grid</a></li>
+<li><a class="reference internal" href="#rectilinear-grids">Rectilinear grids</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="3D-Structural-Data.html"
+                        title="previous chapter">Analysis and modification of exported 3D Structural Data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="modules.html"
+                        title="next chapter">pygeomod</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Geomodeller-Export.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="pygeomod"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="3D-Structural-Data.html" title="Analysis and modification of exported 3D Structural Data"
+             >previous</a> |</li>
+        <li><a href="index.html">pygeomod 0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Florian Wellmann.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
