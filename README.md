@@ -4,7 +4,29 @@ pygeomod
 Python wrapper for Geomodeller
 ------------------------------
 
+pygeomod is a Python package with several modules to manipulate and control geological models created with Geomodeller. It contains methods to automate model computation and export (for structured and unstructured grids), to change input files, and to adapt exported and imported data sets around geological models.
+
+The current version of the repository can be accessed on github:
+
+https://github.com/flohorovicic/pygeomod
+
 No guarantee for any working order :-) However, if you have any questions, feel free to email me!
+
+Getting Started
+---------------
+
+The best way to get started (after installation, that is) is to go through the IPython tutorial and example notebooks. I will try to keep them as self-consistent as possible (with all data sets provided in the package, as well).
+
+Documentation
+-------------
+
+The best way to view the documentation online is through the ReadTheDocs page:
+
+http://pygeomod.readthedocs.org/en/latest/
+
+The documentation is also available in PDF and HTML versions as part of the repository:
+HTML: https://github.com/flohorovicic/pygeomod/tree/master/doc/_build/html/index.html
+PDF: https://github.com/flohorovicic/pygeomod/tree/master/doc/_build/latex/pygeomod.pdf
 
 Installation 
 ------------
