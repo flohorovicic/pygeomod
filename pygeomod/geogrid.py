@@ -113,9 +113,9 @@ class GeoGrid():
         self.delx = delx
         self.dely = dely
         self.delz = delz
-	self.nx = len(delx)
-	self.ny = len(dely)
-	self.nz = len(delz)
+        self.nx = len(delx)
+        self.ny = len(dely)
+        self.nz = len(delz)
         # create (empty) grid object
         self.grid = np.ndarray((self.nx, self.ny, self.nz))
         # update model extent
@@ -138,9 +138,9 @@ class GeoGrid():
         lib.get_model_bounds.restype = ndpointer(dtype=ctypes.c_int, shape=(6,))
         boundaries = lib.get_model_bounds(filename_ctypes)
         (self.xmin, self.xmax, self.ymin, self.ymax, self.zmin, self.zmax) = boundaries
-	self.extent_x = self.xmax - self.xmin
-	self.extent_y = self.ymax - self.ymin
-	self.extent_z = self.zmax - self.zmin
+        self.extent_x = self.xmax - self.xmin
+        self.extent_y = self.ymax - self.ymin
+        self.extent_z = self.zmax - self.zmin
         
     def update_from_geomodeller_project(self, xml_filename):
         """Update grid properties directly from Geomodeller project
@@ -152,17 +152,17 @@ class GeoGrid():
         # create cell position list with [x0, y0, z0, ... xn, yn, zn]
         cell_position = []
         ids = []
-	# check if cell centers are defined - if not, do so!
-	if not hasattr(self, 'cell_centers_x'):
+        # check if cell centers are defined - if not, do so!
+        if not hasattr(self, 'cell_centers_x'):
             self.determine_cell_centers()
-        for k in range(self.nz):
-            for j in range(self.ny):
-                for i in range(self.nx):
-                    cell_position.append(self.cell_centers_x[i])
-                    cell_position.append(self.cell_centers_y[j])
-                    cell_position.append(self.cell_centers_z[k])
-                    ids.append((i,j,k))
-        
+            for k in range(self.nz):
+                for j in range(self.ny):
+                    for i in range(self.nx):
+                        cell_position.append(self.cell_centers_x[i])
+                        cell_position.append(self.cell_centers_y[j])
+                        cell_position.append(self.cell_centers_z[k])
+                        ids.append((i,j,k))
+            
         # prepare variables for cpp function
         coord_ctypes = (ctypes.c_double * len(cell_position))(*cell_position)
         coord_len = len(cell_position)
@@ -201,6 +201,29 @@ class GeoGrid():
         self.cell_centers_y = np.array([sum_dely[i] - self.dely[i] / 2. for i in range(self.ny)]) + self.ymin
         self.cell_centers_z = np.array([sum_delz[i] - self.delz[i] / 2. for i in range(self.nz)]) + self.zmin
         
+    def determine_cell_boundaries(self):
+        """Determine cell boundaries for all coordinates in "real-world" coordinates"""
+        if not hasattr(self, 'xmin'):
+            raise AttributeError("Please define grid dimensions first")
+        sum_delx = np.cumsum(self.delx)
+        sum_dely = np.cumsum(self.dely)
+        sum_delz = np.cumsum(self.delz)
+        self.boundaries_x = np.ndarray((self.nx+1))
+        self.boundaries_x[0] = 0
+        self.boundaries_x[1:] = sum_delx
+        self.boundaries_y = np.ndarray((self.ny+1))
+        self.boundaries_y[0] = 0
+        self.boundaries_y[1:] = sum_dely
+        self.boundaries_z = np.ndarray((self.nz+1))
+        self.boundaries_z[0] = 0
+        self.boundaries_z[1:] = sum_delz
+        
+        # create a list with all bounds
+        self.bounds = [self.boundaries_y[0], self.boundaries_y[-1],
+                       self.boundaries_x[0], self.boundaries_x[-1],
+                       self.boundaries_z[0], self.boundaries_z[-1]]
+            
+    
     def adjust_gridshape(self):
         """Reshape numpy array to reflect model dimensions"""
         self.grid = np.reshape(self.grid, (self.nz, self.ny, self.nx))
@@ -227,7 +250,7 @@ class GeoGrid():
             - *savefig* = bool : save figure to file (default: show)
             - *fig_filename* = string : filename to save figure
         """
-	colorbar = kwds.get('colorbar', True)
+        colorbar = kwds.get('colorbar', True)
         cmap = kwds.get('cmap', 'jet')
         rescale = kwds.get('rescale', False)
         ve = kwds.get('ve', 1.)
@@ -355,6 +378,22 @@ class GeoGrid():
         gridToVTK(vtk_filename, x, y, z,
                   cellData = {var_name: grid})
         
+    def export_to_csv(self, filename = "geo_grid.csv"):
+        """Export grid to x,y,z,value pairs in a csv file
+        
+        Ordering is x-dominant (first increase in x, then y, then z)
+        
+        **Arguments**:
+            - *filename* = string : filename of csv file (default: geo_grid.csv)
+        """
+        f = open(filename, 'w')
+        for zz in self.delz:
+            for yy in self.dely:
+                for xx in self.delx:
+                    f.write("%.1f,%.1f,%.1f,%.d" % (xx,yy,zz,self.grid[xx,yy,zz]))
+        f.close()
+        
+        
     def determine_geology_ids(self):
         """Determine all ids assigned to cells in the grid"""
         self.unit_ids = np.unique(self.grid)
@@ -453,9 +492,68 @@ class GeoGrid():
                 print("%3d : %.2f km^3" % (unit_id, 
                                             self.id_volumes[unit_id]/1E9))
             
-                
-            
+               
+    def extract_subgrid(self, subrange, **kwds):
+        """Extract a subgrid model from existing grid
         
+        **Arguments**:
+            - *subrange* = (x_from, x_to, y_from, y_to, z_from, z_to) : range for submodel in either cell or world coords
+        
+        **Optional keywords**:
+            - *range_type* = 'cell', 'world' : define if subrange in cell ids (default) or real-world coordinates
+        """
+        range_type = kwds.get('range_type', 'cell')
+
+        if not hasattr(self, 'boundaries_x'):
+            self.determine_cell_boundaries()
+        
+        if range_type == 'world':
+            # determine cells
+            subrange[0] = np.argwhere(self.boundaries_x > subrange[0])[0][0]
+            subrange[1] = np.argwhere(self.boundaries_x < subrange[1])[-1][0]
+            subrange[2] = np.argwhere(self.boundaries_y > subrange[2])[0][0]
+            subrange[3] = np.argwhere(self.boundaries_y < subrange[3])[-1][0]
+            subrange[4] = np.argwhere(self.boundaries_z > subrange[4])[0][0]
+            subrange[5] = np.argwhere(self.boundaries_z < subrange[5])[-1][0]
+            
+        # create a copy of the original grid
+        import copy
+        subgrid = copy.deepcopy(self)
+        
+        # extract grid
+        subgrid.grid = self.grid[subrange[0]:subrange[1],
+                                 subrange[2]:subrange[3],
+                                 subrange[4]:subrange[5]]
+        
+        subgrid.nx = subrange[1] - subrange[0]
+        subgrid.ny = subrange[3] - subrange[2]
+        subgrid.nz = subrange[5] - subrange[4]
+        
+        # update extent
+        subgrid.xmin = self.boundaries_x[subrange[0]]
+        subgrid.xmax = self.boundaries_x[subrange[1]]
+        subgrid.ymin = self.boundaries_y[subrange[2]]
+        subgrid.ymax = self.boundaries_y[subrange[3]]
+        subgrid.zmin = self.boundaries_z[subrange[4]]
+        subgrid.zmax = self.boundaries_z[subrange[5]]
+        
+        subgrid.extent_x = subgrid.xmax - subgrid.xmin
+        subgrid.extent_y = subgrid.ymax - subgrid.ymin
+        subgrid.extent_z = subgrid.zmax - subgrid.zmin
+        
+        # update cell spacings
+        subgrid.delx = self.delx[subrange[0]:subrange[1]]
+        subgrid.dely = self.dely[subrange[2]:subrange[3]]
+        subgrid.delz = self.delz[subrange[4]:subrange[5]]
+        
+        # now: update other attributes:
+        subgrid.determine_cell_centers()
+        subgrid.determine_cell_boundaries()
+        subgrid.determine_cell_volumes()
+        subgrid.determine_geology_ids()
+        
+        # finally: return subgrid
+        return subgrid
         
         
         
