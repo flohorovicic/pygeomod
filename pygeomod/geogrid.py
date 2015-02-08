@@ -247,7 +247,7 @@ class GeoGrid():
         f_g01.write("UPPER SW CORNER (X Y Z) = %.1f %.1f %.1f\n" % (self.xmin - self.gps_range,
                                                                     self.ymin - self.gps_range,
                                                                     self.zmax))
-        f_g01.write("LOWER NW CORNER (X Y Z) = %.1f %.1f %.1f\n" % (self.xmax + self.gps_range,
+        f_g01.write("LOWER NE CORNER (X Y Z) = %.1f %.1f %.1f\n" % (self.xmax + self.gps_range,
                                                                     self.ymax + self.gps_range,
                                                                     self.zmin))
         f_g01.write("NUMBER OF LAYERS = %d\n" % self.nz)
@@ -280,8 +280,13 @@ INDEXED DATA FORMAT = Yes
         
         # write geology blocks to file 
         for k in range(self.nz):
-            for val in self.grid[:,:,k].ravel(order = 'A'):
-                f_g12.write("%d\t" % val)
+            # this worked for geophysics, but not for re-import with pynoddy:
+#             for val in self.grid[:,:,k].ravel(order = 'A'):
+#                 f_g12.write("%d\t" % val)
+            for i in range(self.nx):
+                for val in self.grid[i,:,k]:
+                    f_g12.write("%d\t" % val)
+                f_g12.write("\n")
             # f_g12.write(['%d\t' % i for i in self.grid[:,:,k].ravel()])
             f_g12.write("\n")
         
