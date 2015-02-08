@@ -87,6 +87,13 @@ class GeoGrid():
         (self.nx, self.ny, self.nz) = (len(self.delx), len(self.dely), len(self.delz))
         (self.extent_x, self.extent_y, self.extent_z) = (sum(self.delx), sum(self.dely), sum(self.delz))        
         
+    def set_basename(self, name):
+        """Set basename for grid exports, etc.
+        
+        **Arguments**:
+            - *name* = string: basename
+        """
+        self.basename = name
         
     def load_dimensions(self, dimensions_filename):
         """Load project dimensions from file"""
@@ -174,35 +181,138 @@ class GeoGrid():
         for i in range(len(formations_raw)):
             self.grid[ids[i][0],ids[i][1],ids[i][2]] = formations_raw[i]
             
+    def set_densities(self, densities):
+        """Set layer densities
         
+        **Arguments**:
+            - *densities* = dictionary of floats: densities for geology ids
+        """
+        self.densities = densities
         
-    def write_noddy_files(self):
+    def set_sus(self, sus):
+        """Set layer susceptibilities
+        
+        **Arguments**:
+            - *us* = dictionary of floats: magnetic susceptibilities for geology ids
+        """
+        self.sus = sus
+        
+    def write_noddy_files(self, **kwds):
         """Create Noddy block model files (for grav/mag calculation)
+        
+        **Optional keywords**:
+            - *gps_range* = float : set GPS range (default: 1200.)
         
         Method generates the files required to run the forward gravity/ magnetics response
         from the block model:
-        - model.g01 = file with basic model information
+        - model.g00 = file with basic model information
         - model.g12 = discretised geological (block) model
         - base.his = Noddy history file with some basic settings
         """
-        f = open(self.basename + ".g12")
-        method = 'standard' # standard method to read file
+        self.gps_range = kwds.get("gps_range", 1200.)
+        
+        if not hasattr(self, 'basename'):
+            self.basename = "geogrid"
+        f_g12 = open(self.basename + ".g12", 'w')
+        f_g01 = open(self.basename + ".g00", 'w')
         # method = 'numpy'    # using numpy should be faster - but it messes up the order... possible to fix?
-        if method == 'standard':
-            i = 0
-            j = 0
-            k = 0
-            self.block = np.ndarray((self.nx,self.ny,self.nz))
-            for line in f.readlines():
-                if line == '\n':
-                    # next z-slice
-                    k += 1
-                    # reset x counter
-                    i = 0
-                    continue
-                l = [int(l1) for l1 in line.strip().split("\t")]
-                self.block[i,:,self.nz-k-1] = np.array(l)[::-1]
-                i += 1
+#         if method == 'standard':
+#             i = 0
+#             j = 0
+#             k = 0
+#             self.block = np.ndarray((self.nx,self.ny,self.nz))
+#             for line in f.readlines():
+#                 if line == '\n':
+#                     # next z-slice
+#                     k += 1
+#                     # reset x counter
+#                     i = 0
+#                     continue
+#                 l = [int(l1) for l1 in line.strip().split("\t")]
+#                 self.block[i,:,self.nz-k-1] = np.array(l)[::-1]
+#                 i += 1
+
+        if not hasattr(self, "unit_ids"):
+            self.determine_geology_ids()
+        
+        #=======================================================================
+        # # create file with base settings (.g00)
+        #=======================================================================
+        f_g01.write("VERSION = 7.11\n")
+        f_g01.write("FILE PREFIX = " + self.basename + "\n")
+        import time
+        t = time.localtime() # get current time
+        f_g01.write("DATE = %d/%d/%d\n" % (t.tm_mday, t.tm_mon, t.tm_year))
+        f_g01.write("TIME = %d:%d:%d\n" % (t.tm_hour, t.tm_min, t.tm_sec))
+        f_g01.write("UPPER SW CORNER (X Y Z) = %.1f %.1f %.1f\n" % (self.xmin - self.gps_range,
+                                                                    self.ymin - self.gps_range,
+                                                                    self.zmax))
+        f_g01.write("LOWER NW CORNER (X Y Z) = %.1f %.1f %.1f\n" % (self.xmax + self.gps_range,
+                                                                    self.ymax + self.gps_range,
+                                                                    self.zmin))
+        f_g01.write("NUMBER OF LAYERS = %d\n" % self.nz)
+        for k in range(self.nz):
+            f_g01.write("\tLAYER %d DIMENSIONS (X Y) = %d %d\n" % (k, 
+                                                                   self.nx + 2 * (self.gps_range / self.delx[0]),
+                                                                   self.ny + 2 * (self.gps_range / self.dely[0])))
+        f_g01.write("NUMBER OF CUBE SIZES = %d\n" % self.nz)
+        for k in range(self.nz):
+            f_g01.write("\tCUBE SIZE FOR LAYER %d = %d\n" % (k, self.delx[0]))
+        f_g01.write("CALCULATION RANGE = %d\n" % (self.gps_range / self.delx[0]))
+        f_g01.write("""INCLINATION OF EARTH MAG FIELD = -67.00
+INTENSITY OF EARTH MAG FIELD = 63000.00
+DECLINATION OF VOL. WRT. MAG NORTH = 0.00
+DENSITY CALCULATED = Yes
+SUSCEPTIBILITY CALCULATED = Yes
+REMANENCE CALCULATED = No
+ANISOTROPY CALCULATED = No
+INDEXED DATA FORMAT = Yes
+""")
+        f_g01.write("NUM ROCK TYPES = %d\n" % len(self.unit_ids))
+        for i in self.unit_ids:
+            f_g01.write("ROCK DEFINITION Layer %d = %d\n" % (i, i))
+            f_g01.write("\tDensity = %f\n" % self.densities[int(i-1)])
+            f_g01.write("\tSus = %f\n" % self.sus[int(i-1)])
+        
+        #=======================================================================
+        # Create g12 file
+        #=======================================================================
+        
+        # write geology blocks to file 
+        for k in range(self.nz):
+            for val in self.grid[:,:,k].ravel(order = 'A'):
+                f_g12.write("%d\t" % val)
+            # f_g12.write(['%d\t' % i for i in self.grid[:,:,k].ravel()])
+            f_g12.write("\n")
+        
+        f_g12.close()
+        f_g01.close()
+                
+        #=======================================================================
+        # # create noddy history file for base settings
+        #=======================================================================
+        import pynoddy.history
+        history = self.basename + "_base.his"
+        nm = pynoddy.history.NoddyHistory()
+        # add stratigraphy
+        # create dummy names and layers for base stratigraphy
+        layer_names = []
+        layer_thicknesses = []
+        for i in self.unit_ids:
+            layer_names.append('Layer %d' % i)
+            layer_thicknesses.append(500)
+        strati_options = {'num_layers' : len(self.unit_ids),
+                          'layer_names' : layer_names,
+                          'layer_thickness' : layer_thicknesses}
+        nm.add_event('stratigraphy', strati_options)
+        
+        # set grid origin and extent:
+        nm.set_origin(self.xmin, self.ymin, self.zmin)
+        nm.set_extent(self.extent_x, self.extent_y, self.extent_z)
+        
+        nm.write_history(history)
+        
+
 
         
     
