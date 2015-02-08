@@ -175,6 +175,34 @@ class GeoGrid():
             self.grid[ids[i][0],ids[i][1],ids[i][2]] = formations_raw[i]
             
         
+        
+    def write_noddy_files(self):
+        """Create Noddy block model files (for grav/mag calculation)
+        
+        Method generates the files required to run the forward gravity/ magnetics response
+        from the block model:
+        - model.g01 = file with basic model information
+        - model.g12 = discretised geological (block) model
+        - base.his = Noddy history file with some basic settings
+        """
+        f = open(self.basename + ".g12")
+        method = 'standard' # standard method to read file
+        # method = 'numpy'    # using numpy should be faster - but it messes up the order... possible to fix?
+        if method == 'standard':
+            i = 0
+            j = 0
+            k = 0
+            self.block = np.ndarray((self.nx,self.ny,self.nz))
+            for line in f.readlines():
+                if line == '\n':
+                    # next z-slice
+                    k += 1
+                    # reset x counter
+                    i = 0
+                    continue
+                l = [int(l1) for l1 in line.strip().split("\t")]
+                self.block[i,:,self.nz-k-1] = np.array(l)[::-1]
+                i += 1
 
         
     
