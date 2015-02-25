@@ -271,8 +271,8 @@ INDEXED DATA FORMAT = Yes
         f_g01.write("NUM ROCK TYPES = %d\n" % len(self.unit_ids))
         for i in self.unit_ids:
             f_g01.write("ROCK DEFINITION Layer %d = %d\n" % (i, i))
-            f_g01.write("\tDensity = %f\n" % self.densities[int(i-1)])
-            f_g01.write("\tSus = %f\n" % self.sus[int(i-1)])
+            f_g01.write("\tDensity = %f\n" % self.densities[int(i)])
+            f_g01.write("\tSus = %f\n" % self.sus[int(i)])
         
         #=======================================================================
         # Create g12 file
@@ -510,6 +510,8 @@ INDEXED DATA FORMAT = Yes
         x[1:] = np.cumsum(self.delx)
         y[1:] = np.cumsum(self.dely)
         z[1:] = np.cumsum(self.delz)
+        
+        
         
         # plot in coordinates
         if real_coords:
